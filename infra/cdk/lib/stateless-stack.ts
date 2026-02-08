@@ -119,7 +119,7 @@ export class StatelessStack extends cdk.Stack {
     const service = new ecs.FargateService(this, 'Service', {
       cluster,
       taskDefinition: taskDef,
-      desiredCount: 2,
+      desiredCount: 1,
       securityGroups: [serviceSg],
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       assignPublicIp: false,
@@ -161,7 +161,7 @@ export class StatelessStack extends cdk.Stack {
 
     // Auto-scaling
     const scaling = service.autoScaleTaskCount({
-      minCapacity: 2,
+      minCapacity: 1,
       maxCapacity: 10,
     });
 
