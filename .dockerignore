@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+*.md
+tests
+infra
+.env*
+vitest.config.ts
+drizzle.config.ts
