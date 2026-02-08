@@ -14,3 +14,7 @@ export const loginSchema = z.object({
 export const refreshSchema = z.object({
   refresh_token: z.string().min(1, "Refresh token is required"),
 });
+
+export const createApiKeySchema = z.object({
+  name: z.string().min(1, "Name is required").max(255),
+});
