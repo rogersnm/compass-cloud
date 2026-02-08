@@ -45,3 +45,14 @@ export const createInvitationSchema = z.object({
 export const acceptInvitationSchema = z.object({
   token: z.string().min(1, "Token is required"),
 });
+
+export const createProjectSchema = z.object({
+  name: z.string().min(1, "Name is required").max(255),
+  key: z
+    .string()
+    .min(2)
+    .max(5)
+    .regex(/^[A-Z0-9]+$/, "Key must be uppercase alphanumeric")
+    .optional(),
+  body: z.string().optional(),
+});
