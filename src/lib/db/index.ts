@@ -16,9 +16,14 @@ function buildConnectionString(): string {
       "DATABASE_URL or DB_HOST+DB_USERNAME+DB_PASSWORD required"
     );
   }
-  const sslmode = process.env.DB_SSLMODE || "";
-  const params = sslmode ? `?sslmode=${sslmode}` : "";
-  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/${name}${params}`;
+  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/${name}`;
+}
+
+function sslOptions(): boolean | object {
+  const mode = process.env.DB_SSLMODE;
+  if (!mode) return false;
+  if (mode === "no-verify") return { rejectUnauthorized: false };
+  return mode as unknown as boolean;
 }
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
@@ -26,7 +31,7 @@ let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 export function getDb() {
   if (!_db) {
     const url = buildConnectionString();
-    const client = postgres(url);
+    const client = postgres(url, { ssl: sslOptions() });
     _db = drizzle(client, { schema });
   }
   return _db;

@@ -61,6 +61,7 @@ export class StatelessStack extends cdk.Stack {
       environment: {
         NODE_ENV: 'production',
         PORT: '3000',
+        HOSTNAME: '0.0.0.0',
         DB_HOST: dbHost,
         DB_PORT: dbPort,
         DB_NAME: 'compass',
@@ -81,7 +82,7 @@ export class StatelessStack extends cdk.Stack {
       },
       portMappings: [{ containerPort: 3000 }],
       healthCheck: {
-        command: ['CMD-SHELL', 'wget -q --spider http://localhost:3000/api/health || exit 1'],
+        command: ['CMD-SHELL', 'wget -q --spider http://0.0.0.0:3000/api/health || exit 1'],
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
