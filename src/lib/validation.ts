@@ -46,6 +46,22 @@ export const acceptInvitationSchema = z.object({
   token: z.string().min(1, "Token is required"),
 });
 
+export const createTaskSchema = z.object({
+  title: z.string().min(1, "Title is required").max(500),
+  type: z.enum(["task", "epic"]).optional().default("task"),
+  status: z.enum(["open", "in_progress", "closed"]).optional().default("open"),
+  priority: z.number().int().min(0).max(3).nullable().optional(),
+  epic_task_id: z.string().nullable().optional(),
+  body: z.string().optional(),
+});
+
+export const updateTaskSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  status: z.enum(["open", "in_progress", "closed"]).optional(),
+  priority: z.number().int().min(0).max(3).nullable().optional(),
+  body: z.string().optional(),
+});
+
 export const createProjectSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   key: z
