@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { tasks, projects } from "@/lib/db/schema";
+import { tasks, projects, taskDependencies } from "@/lib/db/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { newTaskId } from "@/lib/id/generate";
+import { validateDAG } from "@/lib/dag/validate";
 import { encodeCursor, decodeCursor } from "@/lib/pagination";
 
 export async function createTask(params: {
@@ -245,5 +246,135 @@ export async function deleteTask(
     is_current: false,
     created_by_user_id: userId,
     deleted_at: new Date(),
+  });
+}
+
+export async function updateTaskDependencies(
+  taskId: string,
+  dependsOnIds: string[],
+  orgId: string,
+  projectId: string
+) {
+  // Load the task being updated
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.task_id, taskId),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at)
+      )
+    )
+    .limit(1);
+
+  if (!task) throw new NotFoundError("Task not found");
+
+  if (task.type === "epic") {
+    throw new ValidationError("Epics cannot have dependencies");
+  }
+
+  // Validate targets exist and are not epics
+  for (const depId of dependsOnIds) {
+    if (depId === taskId) {
+      throw new ValidationError("Task cannot depend on itself");
+    }
+
+    const [dep] = await db
+      .select()
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.task_id, depId),
+          eq(tasks.is_current, true),
+          isNull(tasks.deleted_at)
+        )
+      )
+      .limit(1);
+
+    if (!dep) throw new NotFoundError(`Dependency task ${depId} not found`);
+    if (dep.type === "epic") {
+      throw new ValidationError("Cannot depend on an epic");
+    }
+  }
+
+  // Load all current tasks in project for DAG validation
+  const allTasks = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.project_id, projectId),
+        eq(tasks.organization_id, orgId),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at)
+      )
+    );
+
+  // Load all current edges
+  const allEdges = await db
+    .select()
+    .from(taskDependencies)
+    .where(isNull(taskDependencies.deleted_at));
+
+  // Build proposed edge set: remove old edges for this task, add new ones
+  const nodeIds = allTasks.map((t) => t.task_id);
+  const edges = allEdges
+    .filter((e) => e.task_id !== taskId)
+    .map((e) => ({ from: e.task_id, to: e.depends_on_task_id }));
+
+  for (const depId of dependsOnIds) {
+    edges.push({ from: taskId, to: depId });
+  }
+
+  const result = validateDAG(nodeIds, edges);
+  if (!result.valid) {
+    throw new ValidationError(
+      `Cycle detected: ${result.cycle!.join(" -> ")}`
+    );
+  }
+
+  // Soft-delete existing dependencies for this task
+  await db
+    .update(taskDependencies)
+    .set({ deleted_at: new Date() })
+    .where(
+      and(
+        eq(taskDependencies.task_id, taskId),
+        isNull(taskDependencies.deleted_at)
+      )
+    );
+
+  // Insert new dependencies
+  for (const depId of dependsOnIds) {
+    await db.insert(taskDependencies).values({
+      task_id: taskId,
+      depends_on_task_id: depId,
+    });
+  }
+}
+
+export async function getTaskDependencies(taskId: string) {
+  const deps = await db
+    .select()
+    .from(taskDependencies)
+    .where(
+      and(
+        eq(taskDependencies.task_id, taskId),
+        isNull(taskDependencies.deleted_at)
+      )
+    );
+
+  return deps.map((d) => d.depends_on_task_id);
+}
+
+export function isBlocked(
+  taskId: string,
+  deps: string[],
+  taskStatusMap: Map<string, string>
+): boolean {
+  return deps.some((depId) => {
+    const status = taskStatusMap.get(depId);
+    return status !== "closed";
   });
 }
