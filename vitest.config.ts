@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ["tests/**/*.test.ts"],
-    exclude: ["node_modules"],
+    exclude: ["node_modules", "tests/e2e/**"],
     testTimeout: 15000,
     fileParallelism: false,
     env: {

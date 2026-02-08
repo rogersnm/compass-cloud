@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Disable React-specific rules for Playwright test files
+  {
+    files: ["tests/e2e/**"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
