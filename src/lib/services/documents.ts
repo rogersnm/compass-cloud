@@ -177,6 +177,32 @@ export async function updateDocument(
   return updated;
 }
 
+export async function getDocumentVersions(displayId: string, orgId: string) {
+  // Find the document_id from any row with this display_id in this org
+  const [any] = await db
+    .select({ document_id: documents.document_id })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.display_id, displayId),
+        eq(documents.organization_id, orgId)
+      )
+    )
+    .limit(1);
+
+  if (!any) {
+    throw new NotFoundError("Document not found");
+  }
+
+  const versions = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.document_id, any.document_id))
+    .orderBy(desc(documents.version));
+
+  return versions;
+}
+
 export async function deleteDocument(
   displayId: string,
   orgId: string,

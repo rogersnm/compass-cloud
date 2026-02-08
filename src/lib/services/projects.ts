@@ -190,6 +190,32 @@ export async function updateProject(
   return updated;
 }
 
+export async function getProjectVersions(key: string, orgId: string) {
+  // First find the project_id from the current version
+  const [current] = await db
+    .select({ project_id: projects.project_id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.organization_id, orgId),
+        eq(projects.key, key)
+      )
+    )
+    .limit(1);
+
+  if (!current) {
+    throw new NotFoundError("Project not found");
+  }
+
+  const versions = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.project_id, current.project_id))
+    .orderBy(desc(projects.version));
+
+  return versions;
+}
+
 export async function deleteProject(
   key: string,
   orgId: string,

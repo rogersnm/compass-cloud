@@ -213,6 +213,32 @@ export async function updateTask(
   return updated;
 }
 
+export async function getTaskVersions(displayId: string, orgId: string) {
+  // Find the task_id from any row with this display_id in this org
+  const [any] = await db
+    .select({ task_id: tasks.task_id })
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.display_id, displayId),
+        eq(tasks.organization_id, orgId)
+      )
+    )
+    .limit(1);
+
+  if (!any) {
+    throw new NotFoundError("Task not found");
+  }
+
+  const versions = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.task_id, any.task_id))
+    .orderBy(desc(tasks.version));
+
+  return versions;
+}
+
 export async function deleteTask(
   displayId: string,
   orgId: string,
