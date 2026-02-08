@@ -4,6 +4,7 @@ import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { newTaskId } from "@/lib/id/generate";
 import { validateDAG } from "@/lib/dag/validate";
+import { topologicalSort } from "@/lib/dag/topo-sort";
 import { encodeCursor, decodeCursor } from "@/lib/pagination";
 
 export async function createTask(params: {
@@ -377,4 +378,59 @@ export function isBlocked(
     const status = taskStatusMap.get(depId);
     return status !== "closed";
   });
+}
+
+export async function getReadyTasks(projectId: string, orgId: string) {
+  // Load all current, non-deleted tasks (excluding epics)
+  const allTasks = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.project_id, projectId),
+        eq(tasks.organization_id, orgId),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at),
+        eq(tasks.type, "task")
+      )
+    );
+
+  // Load all current edges
+  const allEdges = await db
+    .select()
+    .from(taskDependencies)
+    .where(isNull(taskDependencies.deleted_at));
+
+  const taskMap = new Map(allTasks.map((t) => [t.task_id, t]));
+  const statusMap = new Map(allTasks.map((t) => [t.task_id, t.status]));
+
+  // Build dependency map: task_id -> [depends_on_task_id]
+  const depMap = new Map<string, string[]>();
+  for (const t of allTasks) {
+    depMap.set(t.task_id, []);
+  }
+  for (const e of allEdges) {
+    if (depMap.has(e.task_id)) {
+      depMap.get(e.task_id)!.push(e.depends_on_task_id);
+    }
+  }
+
+  // Filter to open/in_progress tasks whose deps are all closed
+  const nodeIds = allTasks.map((t) => t.task_id);
+  const edges = allEdges
+    .filter((e) => taskMap.has(e.task_id) && taskMap.has(e.depends_on_task_id))
+    .map((e) => ({ from: e.task_id, to: e.depends_on_task_id }));
+
+  // Topological sort for ordering
+  const sorted = topologicalSort(nodeIds, edges);
+
+  // A task is "ready" if it's not closed and all its deps are closed
+  const ready = sorted.filter((id) => {
+    const task = taskMap.get(id)!;
+    if (task.status === "closed") return false;
+    const deps = depMap.get(id) || [];
+    return !isBlocked(id, deps, statusMap);
+  });
+
+  return ready.map((id) => taskMap.get(id)!);
 }
