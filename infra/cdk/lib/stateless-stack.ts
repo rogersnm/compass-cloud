@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -112,8 +113,7 @@ export class StatelessStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
-    // Set API base URL from ALB DNS (resolved at deploy time)
-    container.addEnvironment('API_BASE_URL', `http://${alb.loadBalancerDnsName}`);
+    container.addEnvironment('API_BASE_URL', 'https://compasscloud.io');
 
     // ECS Fargate Service
     const service = new ecs.FargateService(this, 'Service', {
@@ -125,12 +125,19 @@ export class StatelessStack extends cdk.Stack {
       assignPublicIp: false,
     });
 
-    // ALB Listener + Target Group
-    const listener = alb.addListener('HttpListener', {
-      port: 80,
+    // Import ACM wildcard certificate
+    const certificate = acm.Certificate.fromCertificateArn(
+      this, 'Cert',
+      'arn:aws:acm:eu-west-2:497261240206:certificate/b6fcfb76-575a-43e9-a32c-6819ca136e0c',
+    );
+
+    // HTTPS listener
+    const httpsListener = alb.addListener('HttpsListener', {
+      port: 443,
+      certificates: [certificate],
     });
 
-    const targetGroup = listener.addTargets('EcsTargets', {
+    const targetGroup = httpsListener.addTargets('EcsTargets', {
       port: 3000,
       protocol: elbv2.ApplicationProtocol.HTTP,
       targets: [service],
@@ -140,6 +147,16 @@ export class StatelessStack extends cdk.Stack {
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 3,
       },
+    });
+
+    // HTTP -> HTTPS redirect
+    alb.addListener('HttpListener', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.redirect({
+        protocol: 'HTTPS',
+        port: '443',
+        permanent: true,
+      }),
     });
 
     // Auto-scaling
