@@ -64,6 +64,7 @@ export class StatelessStack extends cdk.Stack {
         DB_HOST: dbHost,
         DB_PORT: dbPort,
         DB_NAME: 'compass',
+        DB_SSLMODE: 'no-verify',
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(databaseSecret, 'username'),
