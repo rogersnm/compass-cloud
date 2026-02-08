@@ -6,7 +6,6 @@ import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { MarkdownEditor } from "@/components/editor/markdown-editor";
 import type { ApiError, ApiResponse, Task } from "@/lib/api/types";
 
 interface TaskFormProps {
@@ -85,7 +85,7 @@ export function TaskForm({ open, onOpenChange, projectKey, task }: TaskFormProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Task" : "New Task"}</DialogTitle>
         </DialogHeader>
@@ -146,14 +146,8 @@ export function TaskForm({ open, onOpenChange, projectKey, task }: TaskFormProps
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-body">Body</Label>
-            <Textarea
-              id="task-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={6}
-              placeholder="Task description (markdown)"
-            />
+            <Label>Body</Label>
+            <MarkdownEditor value={body} onChange={setBody} defaultMode="edit" />
           </div>
           <div className="flex justify-end gap-2">
             <Button

@@ -12,6 +12,7 @@ import { ProjectForm } from "@/components/projects/project-form";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CardSkeleton } from "@/components/shared/loading-skeleton";
 import { TaskList } from "@/components/tasks/task-list";
+import { DocumentList } from "@/components/documents/document-list";
 import type { ApiError, ApiResponse, Project } from "@/lib/api/types";
 
 export default function ProjectDetailPage({
@@ -90,9 +91,7 @@ export default function ProjectDetailPage({
           <TaskList projectKey={key} orgSlug={orgSlug} />
         </TabsContent>
         <TabsContent value="documents" className="pt-4">
-          <p className="text-sm text-muted-foreground">
-            Document list will be implemented in a later task.
-          </p>
+          <DocumentList projectKey={key} orgSlug={orgSlug} />
         </TabsContent>
       </Tabs>
 

@@ -13,19 +13,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MarkdownEditor } from "@/components/editor/markdown-editor";
-import type { ApiError, ApiResponse, Project } from "@/lib/api/types";
+import type { ApiError, ApiResponse, Document } from "@/lib/api/types";
 
-interface ProjectFormProps {
+interface DocumentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  project?: Project;
+  projectKey: string;
+  document?: Document;
 }
 
-export function ProjectForm({ open, onOpenChange, project }: ProjectFormProps) {
-  const isEdit = !!project;
-  const [name, setName] = useState(project?.name ?? "");
-  const [key, setKey] = useState("");
-  const [body, setBody] = useState(project?.body ?? "");
+export function DocumentForm({
+  open,
+  onOpenChange,
+  projectKey,
+  document,
+}: DocumentFormProps) {
+  const isEdit = !!document;
+  const [title, setTitle] = useState(document?.title ?? "");
+  const [body, setBody] = useState(document?.body ?? "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
@@ -37,25 +42,23 @@ export function ProjectForm({ open, onOpenChange, project }: ProjectFormProps) {
 
     try {
       if (isEdit) {
-        await api.patch<ApiResponse<Project>>(`/projects/${project.key}`, {
-          name: name || undefined,
-          body,
-        });
+        await api.patch<ApiResponse<Document>>(
+          `/documents/${document.display_id}`,
+          { title: title || undefined, body }
+        );
       } else {
-        await api.post<ApiResponse<Project>>("/projects", {
-          name,
-          key: key || undefined,
-          body: body || undefined,
-        });
+        await api.post<ApiResponse<Document>>(
+          `/projects/${projectKey}/documents`,
+          { title, body: body || undefined }
+        );
       }
-      await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
       onOpenChange(false);
-      setName("");
-      setKey("");
+      setTitle("");
       setBody("");
     } catch (err) {
       const apiErr = err as ApiError;
-      setError(apiErr.error?.message ?? "Failed to save project");
+      setError(apiErr.error?.message ?? "Failed to save document");
     } finally {
       setLoading(false);
     }
@@ -65,40 +68,24 @@ export function ProjectForm({ open, onOpenChange, project }: ProjectFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Project" : "New Project"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Edit Document" : "New Document"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="space-y-2">
-            <Label htmlFor="proj-name">Name</Label>
+            <Label htmlFor="doc-title">Title</Label>
             <Input
-              id="proj-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="doc-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               required
-              placeholder="My Project"
+              placeholder="Document title"
             />
           </div>
-          {!isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="proj-key">
-                Key <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="proj-key"
-                value={key}
-                onChange={(e) => setKey(e.target.value.toUpperCase())}
-                placeholder="AUTO"
-                maxLength={5}
-                pattern="[A-Z0-9]*"
-              />
-              <p className="text-xs text-muted-foreground">
-                2-5 uppercase letters/numbers. Auto-generated if left empty.
-              </p>
-            </div>
-          )}
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label>Body</Label>
             <MarkdownEditor value={body} onChange={setBody} defaultMode="edit" />
           </div>
           <div className="flex justify-end gap-2">
