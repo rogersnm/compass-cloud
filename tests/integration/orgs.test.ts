@@ -148,4 +148,41 @@ describe("organization CRUD", () => {
     const count = await getAdminCount(org.organization_id);
     expect(count).toBe(1);
   });
+
+  it("rejects delete from non-admin", async () => {
+    const admin = await createTestUser({ email: "admin@test.com" });
+    const member = await createTestUser({ email: "member@test.com" });
+    const org = await createOrg({
+      name: "Protected",
+      slug: "protected",
+      creatorUserId: admin.user_id,
+    });
+
+    const db = getTestDB();
+    await db.insert(orgMembers).values({
+      organization_id: org.organization_id,
+      user_id: member.user_id,
+      role: "member",
+    });
+
+    await expect(
+      deleteOrg("protected", member.user_id)
+    ).rejects.toThrow("Admin access required");
+  });
+
+  it("multi-tenant isolation: user cannot see other org", async () => {
+    const userA = await createTestUser({ email: "a@test.com" });
+    const userB = await createTestUser({ email: "b@test.com" });
+
+    await createOrg({ name: "Org A", slug: "org-a", creatorUserId: userA.user_id });
+    await createOrg({ name: "Org B", slug: "org-b", creatorUserId: userB.user_id });
+
+    const orgsA = await listUserOrgs(userA.user_id);
+    expect(orgsA).toHaveLength(1);
+    expect(orgsA[0].slug).toBe("org-a");
+
+    const orgsB = await listUserOrgs(userB.user_id);
+    expect(orgsB).toHaveLength(1);
+    expect(orgsB[0].slug).toBe("org-b");
+  });
 });
