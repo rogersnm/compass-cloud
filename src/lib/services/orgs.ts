@@ -2,13 +2,19 @@ import { db } from "@/lib/db";
 import {
   organizations,
   orgMembers,
+  users,
   projects,
   tasks,
   documents,
   taskDependencies,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/errors";
 
 function slugify(name: string): string {
   return name
@@ -192,4 +198,114 @@ export async function getAdminCount(orgId: string): Promise<number> {
     );
 
   return Number(result.count);
+}
+
+export async function listMembers(orgId: string) {
+  return db
+    .select({
+      user_id: users.user_id,
+      email: users.email,
+      name: users.name,
+      role: orgMembers.role,
+      joined_at: orgMembers.created_at,
+    })
+    .from(orgMembers)
+    .innerJoin(users, eq(orgMembers.user_id, users.user_id))
+    .where(
+      and(
+        eq(orgMembers.organization_id, orgId),
+        isNull(orgMembers.deleted_at)
+      )
+    );
+}
+
+export async function changeRole(
+  orgId: string,
+  targetUserId: string,
+  newRole: "admin" | "member",
+  actorUserId: string
+) {
+  await requireAdmin(orgId, actorUserId);
+
+  const [member] = await db
+    .select()
+    .from(orgMembers)
+    .where(
+      and(
+        eq(orgMembers.organization_id, orgId),
+        eq(orgMembers.user_id, targetUserId),
+        isNull(orgMembers.deleted_at)
+      )
+    )
+    .limit(1);
+
+  if (!member) {
+    throw new NotFoundError("Member not found");
+  }
+
+  if (member.role === "admin" && newRole === "member") {
+    const count = await getAdminCount(orgId);
+    if (count <= 1) {
+      throw new ValidationError(
+        "Cannot demote the last admin"
+      );
+    }
+  }
+
+  await db
+    .update(orgMembers)
+    .set({ role: newRole })
+    .where(
+      and(
+        eq(orgMembers.organization_id, orgId),
+        eq(orgMembers.user_id, targetUserId),
+        isNull(orgMembers.deleted_at)
+      )
+    );
+
+  return { ...member, role: newRole };
+}
+
+export async function removeMember(
+  orgId: string,
+  targetUserId: string,
+  actorUserId: string
+) {
+  await requireAdmin(orgId, actorUserId);
+
+  const [member] = await db
+    .select()
+    .from(orgMembers)
+    .where(
+      and(
+        eq(orgMembers.organization_id, orgId),
+        eq(orgMembers.user_id, targetUserId),
+        isNull(orgMembers.deleted_at)
+      )
+    )
+    .limit(1);
+
+  if (!member) {
+    throw new NotFoundError("Member not found");
+  }
+
+  if (member.role === "admin") {
+    const count = await getAdminCount(orgId);
+    if (count <= 1) {
+      throw new ValidationError(
+        "Cannot remove the last admin"
+      );
+    }
+  }
+
+  await db
+    .update(orgMembers)
+    .set({ deleted_at: new Date() })
+    .where(
+      and(
+        eq(orgMembers.organization_id, orgId),
+        eq(orgMembers.user_id, targetUserId),
+        isNull(orgMembers.deleted_at)
+      )
+    );
 }

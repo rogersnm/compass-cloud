@@ -32,3 +32,7 @@ export const createOrgSchema = z.object({
 export const updateOrgSchema = z.object({
   name: z.string().min(1, "Name is required").max(255).optional(),
 });
+
+export const changeRoleSchema = z.object({
+  role: z.enum(["admin", "member"]),
+});
