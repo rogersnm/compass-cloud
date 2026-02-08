@@ -57,14 +57,14 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full shadow-lg shadow-primary/5 border-border/60">
       <CardHeader>
         <CardTitle className="text-2xl">Create account</CardTitle>
         <CardDescription>
           Sign up for Compass Cloud.
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <CardContent className="space-y-4">
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -107,15 +107,13 @@ export function RegisterForm() {
 
           <Separator />
 
-          <div>
-            <button
-              type="button"
-              className="text-sm text-muted-foreground underline"
-              onClick={() => setShowOrg(!showOrg)}
-            >
-              {showOrg ? "Hide organization fields" : "Create an organization"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+            onClick={() => setShowOrg(!showOrg)}
+          >
+            {showOrg ? "Hide organization fields" : "Create an organization"}
+          </button>
 
           {showOrg && (
             <div className="space-y-4">

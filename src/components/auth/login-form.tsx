@@ -50,14 +50,14 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full shadow-lg shadow-primary/5 border-border/60">
       <CardHeader>
         <CardTitle className="text-2xl">Sign in</CardTitle>
         <CardDescription>
           Enter your email and password to continue.
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <CardContent className="space-y-4">
           {error && (
             <p className="text-sm text-destructive">{error}</p>
