@@ -153,6 +153,43 @@ export async function getProjectByKey(key: string, orgId: string) {
   return project;
 }
 
+export async function updateProject(
+  key: string,
+  updates: { name?: string; body?: string },
+  orgId: string,
+  userId: string
+) {
+  const current = await getProjectByKey(key, orgId);
+
+  // Mark old version as not current
+  await db
+    .update(projects)
+    .set({ is_current: false })
+    .where(
+      and(
+        eq(projects.project_id, current.project_id),
+        eq(projects.version, current.version)
+      )
+    );
+
+  // Insert new version
+  const [updated] = await db
+    .insert(projects)
+    .values({
+      project_id: current.project_id,
+      version: current.version + 1,
+      organization_id: current.organization_id,
+      key: current.key,
+      name: updates.name ?? current.name,
+      body: updates.body ?? current.body,
+      is_current: true,
+      created_by_user_id: userId,
+    })
+    .returning();
+
+  return updated;
+}
+
 export async function deleteProject(
   key: string,
   orgId: string,
