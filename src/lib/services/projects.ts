@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { projects, tasks, documents } from "@/lib/db/schema";
-import { eq, and, isNull, sql, lt, desc } from "drizzle-orm";
+import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError } from "@/lib/errors";
 import { generateKey, validateKey } from "@/lib/id/generate";
 import { encodeCursor, decodeCursor } from "@/lib/pagination";
@@ -156,7 +156,7 @@ export async function getProjectByKey(key: string, orgId: string) {
 export async function deleteProject(
   key: string,
   orgId: string,
-  userId: string
+  _userId: string
 ) {
   const project = await getProjectByKey(key, orgId);
   const now = new Date();

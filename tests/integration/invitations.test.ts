@@ -156,7 +156,7 @@ describe("invitation flow", () => {
       invitedByUserId: admin.user_id,
     });
 
-    const { invitation: accepted, token: acceptToken } = await createInvitation({
+    const { token: acceptToken } = await createInvitation({
       orgId: org.organization_id,
       email: "accepted@test.com",
       role: "member",

@@ -8,8 +8,7 @@ import {
 import { users, refreshTokens } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/passwords";
 import { hashToken, generateToken } from "@/lib/auth/tokens";
-import { verifyToken } from "@/lib/auth/jwt";
-import { eq, isNull, and, isNotNull } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 
 describe("token refresh and logout", () => {
   beforeAll(async () => {

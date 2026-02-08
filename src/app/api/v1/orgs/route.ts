@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest, authenticateUser } from "@/lib/auth/middleware";
+import { authenticateUser } from "@/lib/auth/middleware";
 import { createOrg, listUserOrgs } from "@/lib/services/orgs";
 import { createOrgSchema } from "@/lib/validation";
 import { errorResponse, ValidationError } from "@/lib/errors";

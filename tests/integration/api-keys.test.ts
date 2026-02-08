@@ -8,7 +8,7 @@ import {
 import { createTestUser, createTestOrg, createTestMember } from "../helpers/fixtures";
 import { apiKeys } from "@/lib/db/schema";
 import { generateApiKey, hashApiKey } from "@/lib/auth/api-keys";
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 describe("API key CRUD", () => {
   beforeAll(async () => {

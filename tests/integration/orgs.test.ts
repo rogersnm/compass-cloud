@@ -15,7 +15,7 @@ import {
   getAdminCount,
 } from "@/lib/services/orgs";
 import { organizations, orgMembers } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 describe("organization CRUD", () => {
   beforeAll(async () => {
@@ -92,7 +92,7 @@ describe("organization CRUD", () => {
 
   it("updates org (admin only)", async () => {
     const user = await createTestUser();
-    const org = await createOrg({
+    await createOrg({
       name: "Old Name",
       slug: "old",
       creatorUserId: user.user_id,

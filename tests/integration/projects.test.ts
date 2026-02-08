@@ -13,7 +13,7 @@ import {
   deleteProject,
 } from "@/lib/services/projects";
 import { projects, tasks, documents } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 describe("project CRUD", () => {
   let orgId: string;

@@ -127,7 +127,7 @@ describe("auth middleware", () => {
       user_id: user.user_id,
     });
 
-    const { key, hash, prefix } = generateApiKey();
+    const { hash, prefix } = generateApiKey();
     const [created] = await db
       .insert(apiKeys)
       .values({

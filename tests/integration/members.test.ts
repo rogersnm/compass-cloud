@@ -13,7 +13,7 @@ import {
   getAdminCount,
 } from "@/lib/services/orgs";
 import { orgMembers } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 describe("org member management", () => {
   beforeAll(async () => {

@@ -3,7 +3,6 @@ import { invitations, orgMembers } from "@/lib/db/schema";
 import { eq, and, isNull, gt } from "drizzle-orm";
 import {
   ConflictError,
-  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "@/lib/errors";

@@ -69,7 +69,7 @@ describe("user registration", () => {
     const db = getTestDB();
     const password_hash = await hashPassword("testpassword");
 
-    const [user] = await db
+    await db
       .insert(users)
       .values({
         email: "Bob@Example.COM",

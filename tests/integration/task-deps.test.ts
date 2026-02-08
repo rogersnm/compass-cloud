@@ -8,7 +8,6 @@ import { createTestUser, createTestOrg, createTestMember } from "../helpers/fixt
 import { createProject } from "@/lib/services/projects";
 import {
   createTask,
-  updateTask,
   updateTaskDependencies,
   getTaskDependencies,
   isBlocked,

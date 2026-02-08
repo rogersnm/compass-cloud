@@ -4,7 +4,7 @@ import { deviceCodes, organizations } from "@/lib/db/schema";
 import { generateApiKey } from "@/lib/auth/api-keys";
 import { apiKeys } from "@/lib/db/schema";
 import { errorResponse, ValidationError } from "@/lib/errors";
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {

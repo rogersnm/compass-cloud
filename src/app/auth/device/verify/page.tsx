@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function DeviceVerifyPage() {
-  const [userCode, setUserCode] = useState("");
+  const [userCode] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("user_code") || "";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -13,12 +17,6 @@ export default function DeviceVerifyPage() {
   const [selectedOrg, setSelectedOrg] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"login" | "authorize">("login");
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("user_code") || "";
-    setUserCode(code);
-  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();

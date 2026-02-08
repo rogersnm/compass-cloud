@@ -9,7 +9,6 @@ import { createProject, getProjectByKey, deleteProject } from "@/lib/services/pr
 import {
   createTask,
   updateTask,
-  deleteTask,
   getTaskByDisplayId,
   listTasks,
   updateTaskDependencies,
@@ -19,9 +18,7 @@ import {
 import {
   createDocument,
   updateDocument,
-  deleteDocument,
   getDocumentByDisplayId,
-  listDocuments,
 } from "@/lib/services/documents";
 import { search } from "@/lib/services/search";
 

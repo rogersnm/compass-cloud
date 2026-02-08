@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, refreshTokens } from "@/lib/db/schema";
 import { comparePassword } from "@/lib/auth/passwords";
-import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
+import { signAccessToken } from "@/lib/auth/jwt";
 import { hashToken, generateToken } from "@/lib/auth/tokens";
 import { loginSchema } from "@/lib/validation";
 import { errorResponse, UnauthorizedError, ValidationError } from "@/lib/errors";
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {

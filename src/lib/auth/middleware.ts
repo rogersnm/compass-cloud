@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { users, apiKeys, orgMembers, organizations } from "@/lib/db/schema";
+import { apiKeys, orgMembers, organizations } from "@/lib/db/schema";
 import { verifyToken } from "./jwt";
 import { hashApiKey } from "./api-keys";
 import { UnauthorizedError, ForbiddenError } from "@/lib/errors";

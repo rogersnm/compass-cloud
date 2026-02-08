@@ -6,7 +6,6 @@ import {
   projects,
   tasks,
   documents,
-  taskDependencies,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import {

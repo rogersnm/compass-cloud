@@ -43,7 +43,7 @@ describe("user login", () => {
     expect(valid).toBe(true);
 
     // Simulate what login does: create tokens and store refresh token
-    const { signAccessToken, signRefreshToken } = await import(
+    const { signAccessToken } = await import(
       "@/lib/auth/jwt"
     );
     const { generateToken } = await import("@/lib/auth/tokens");

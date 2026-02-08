@@ -6,9 +6,8 @@ import {
   getTestDB,
 } from "../helpers/db";
 import { createTestUser, createTestOrg, createTestMember } from "../helpers/fixtures";
-import { deviceCodes, apiKeys } from "@/lib/db/schema";
+import { deviceCodes } from "@/lib/db/schema";
 import { generateDeviceCode, generateUserCode } from "@/lib/auth/device";
-import { hashApiKey } from "@/lib/auth/api-keys";
 import { eq, and, isNull, gt } from "drizzle-orm";
 
 describe("device authorization flow", () => {
