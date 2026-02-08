@@ -62,6 +62,16 @@ export const updateTaskSchema = z.object({
   body: z.string().optional(),
 });
 
+export const createDocumentSchema = z.object({
+  title: z.string().min(1, "Title is required").max(500),
+  body: z.string().optional(),
+});
+
+export const updateDocumentSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  body: z.string().optional(),
+});
+
 export const createProjectSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   key: z
