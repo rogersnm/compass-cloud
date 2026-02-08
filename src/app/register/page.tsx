@@ -1,9 +1,19 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export default function RegisterPage() {
+  const { isAuthenticated, isLoading, memberships } = useAuth();
+  const router = useRouter();
+
+  if (!isLoading && isAuthenticated && memberships.length > 0) {
+    router.replace(`/${memberships[0].slug}`);
+    return null;
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-4">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(37,99,235,0.12)_0%,_transparent_60%)]" />
