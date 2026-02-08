@@ -79,6 +79,20 @@ npm run db:studio     # Drizzle Studio GUI
 - **Test DB**: `compass_test` database on localhost:5434 (auto-configured in vitest.config.ts)
 - Integration tests create/teardown their own data per test using helpers in `tests/helpers/`
 
+## Commit Style
+
+Use [Conventional Commits](https://www.conventionalcommits.org/). Format: `type(scope): description`
+
+Types: `feat`, `fix`, `test`, `build`, `ci`, `infra`, `docs`, `chore`, `refactor`
+
+Scopes (optional): `auth`, `orgs`, `projects`, `tasks`, `docs`
+
+Examples:
+- `feat(tasks): add bulk delete endpoint`
+- `fix(auth): handle expired refresh tokens`
+- `test(orgs): add multi-tenant isolation tests`
+- `infra: increase ECS task memory to 2048`
+
 ### Environment Variables
 
 ```
