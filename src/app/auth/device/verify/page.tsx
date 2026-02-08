@@ -1,6 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function DeviceVerifyPage() {
   const [userCode] = useState(() => {
@@ -37,7 +53,6 @@ export default function DeviceVerifyPage() {
     const { data } = await res.json();
     setAccessToken(data.access_token);
 
-    // Fetch user's orgs
     const meRes = await fetch("/api/v1/auth/me", {
       headers: { Authorization: `Bearer ${data.access_token}` },
     });
@@ -84,138 +99,89 @@ export default function DeviceVerifyPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "80px auto", fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>Authorize Device</h1>
-
-      {userCode && (
-        <div
-          style={{
-            background: "#f0f0f0",
-            padding: "12px 16px",
-            borderRadius: 8,
-            marginBottom: 24,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
-            Verify this code matches your CLI
-          </div>
-          <div style={{ fontSize: 28, fontWeight: "bold", letterSpacing: 4 }}>
-            {userCode}
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div style={{ color: "#dc2626", marginBottom: 16, fontSize: 14 }}>
-          {error}
-        </div>
-      )}
-
-      {step === "login" && (
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 14, marginBottom: 4 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: 8,
-                border: "1px solid #ccc",
-                borderRadius: 4,
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 14, marginBottom: 4 }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: 8,
-                border: "1px solid #ccc",
-                borderRadius: 4,
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#111",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-              fontSize: 14,
-            }}
-          >
-            Sign in
-          </button>
-        </form>
-      )}
-
-      {step === "authorize" && (
-        <form onSubmit={handleAuthorize}>
-          {orgs.length > 1 && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 14, marginBottom: 4 }}>
-                Organization
-              </label>
-              <select
-                value={selectedOrg}
-                onChange={(e) => setSelectedOrg(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: 8,
-                  border: "1px solid #ccc",
-                  borderRadius: 4,
-                }}
-              >
-                <option value="">Select an organization</option>
-                {orgs.map((org) => (
-                  <option key={org.organization_id} value={org.organization_id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Authorize Device</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {userCode && (
+            <div className="rounded-lg bg-muted p-4 text-center">
+              <p className="mb-1 text-xs text-muted-foreground">
+                Verify this code matches your CLI
+              </p>
+              <p className="text-3xl font-bold tracking-widest">{userCode}</p>
             </div>
           )}
-          {orgs.length === 1 && (
-            <p style={{ marginBottom: 16, fontSize: 14, color: "#666" }}>
-              Authorizing for <strong>{orgs[0].name}</strong>
-            </p>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
           )}
-          <button
-            type="submit"
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#16a34a",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-              fontSize: 14,
-            }}
-          >
-            Authorize Device
-          </button>
-        </form>
-      )}
+
+          {step === "login" && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="device-email">Email</Label>
+                <Input
+                  id="device-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="device-password">Password</Label>
+                <Input
+                  id="device-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Sign in
+              </Button>
+            </form>
+          )}
+
+          {step === "authorize" && (
+            <form onSubmit={handleAuthorize} className="space-y-4">
+              {orgs.length > 1 && (
+                <div className="space-y-2">
+                  <Label>Organization</Label>
+                  <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {orgs.map((org) => (
+                        <SelectItem
+                          key={org.organization_id}
+                          value={org.organization_id}
+                        >
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {orgs.length === 1 && (
+                <p className="text-sm text-muted-foreground">
+                  Authorizing for <strong>{orgs[0].name}</strong>
+                </p>
+              )}
+              <Button type="submit" className="w-full">
+                Authorize Device
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
