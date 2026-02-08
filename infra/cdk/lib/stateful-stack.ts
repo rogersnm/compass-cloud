@@ -57,11 +57,11 @@ export class StatefulStack extends cdk.Stack {
     // RDS Postgres 16
     this.database = new rds.DatabaseInstance(this, 'Database', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_16,
+        version: rds.PostgresEngineVersion.VER_18,
       }),
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
-        ec2.InstanceSize.MEDIUM
+        ec2.InstanceSize.MICRO
       ),
       vpc: this.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
