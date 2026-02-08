@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: compass
+      POSTGRES_PASSWORD: compass
+      POSTGRES_DB: compass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compass"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    working_dir: /app
+    command: npx tsx src/lib/db/migrate.ts
+    environment:
+      DATABASE_URL: postgresql://compass:compass@postgres:5432/compass
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://compass:compass@postgres:5432/compass
+      JWT_SECRET: e2e-test-secret-do-not-use-in-production
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://0.0.0.0:3000/api/health || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

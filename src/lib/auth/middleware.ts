@@ -12,6 +12,36 @@ export interface AuthContext {
   role: "admin" | "member";
 }
 
+export interface UserContext {
+  userId: string;
+}
+
+/**
+ * Authenticate a request and return user identity only (no org context).
+ * Use for endpoints like org creation where no org exists yet.
+ */
+export async function authenticateUser(
+  request: NextRequest
+): Promise<UserContext> {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new UnauthorizedError("Missing authorization header");
+  }
+
+  const token = authHeader.slice(7);
+
+  if (token.startsWith("cpk_")) {
+    const ctx = await authenticateApiKey(token);
+    return { userId: ctx.userId };
+  }
+
+  const payload = verifyToken(token);
+  if (!payload) {
+    throw new UnauthorizedError("Invalid or expired token");
+  }
+  return { userId: payload.userId };
+}
+
 export async function authenticateRequest(
   request: NextRequest
 ): Promise<AuthContext> {

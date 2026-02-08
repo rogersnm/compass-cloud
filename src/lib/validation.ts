@@ -4,6 +4,13 @@ export const registerSchema = z.object({
   email: z.email("Invalid email format"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().min(1, "Name is required").max(255),
+  org_name: z.string().min(1).max(255).optional(),
+  org_slug: z
+    .string()
+    .min(1)
+    .max(63)
+    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
+    .optional(),
 });
 
 export const loginSchema = z.object({
