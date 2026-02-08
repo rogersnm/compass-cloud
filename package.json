@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "npx tsx src/lib/db/migrate.ts",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.1",
@@ -27,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }
