@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectForm } from "@/components/projects/project-form";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CardSkeleton } from "@/components/shared/loading-skeleton";
+import { TaskList } from "@/components/tasks/task-list";
 import type { ApiError, ApiResponse, Project } from "@/lib/api/types";
 
 export default function ProjectDetailPage({
@@ -86,9 +87,7 @@ export default function ProjectDetailPage({
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="tasks" className="pt-4">
-          <p className="text-sm text-muted-foreground">
-            Task list will be implemented in a later task.
-          </p>
+          <TaskList projectKey={key} orgSlug={orgSlug} />
         </TabsContent>
         <TabsContent value="documents" className="pt-4">
           <p className="text-sm text-muted-foreground">
