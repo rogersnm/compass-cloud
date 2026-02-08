@@ -112,6 +112,9 @@ export class StatelessStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
+    // Set API base URL from ALB DNS (resolved at deploy time)
+    container.addEnvironment('API_BASE_URL', `http://${alb.loadBalancerDnsName}`);
+
     // ECS Fargate Service
     const service = new ecs.FargateService(this, 'Service', {
       cluster,

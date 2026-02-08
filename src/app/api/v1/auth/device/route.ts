@@ -23,7 +23,7 @@ export async function POST() {
       data: {
         device_code,
         user_code,
-        verification_uri: "/auth/device/verify",
+        verification_uri: `${process.env.API_BASE_URL || ""}/auth/device/verify`,
         expires_in: 600,
         interval: 5,
       },
