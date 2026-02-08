@@ -434,3 +434,45 @@ export async function getReadyTasks(projectId: string, orgId: string) {
 
   return ready.map((id) => taskMap.get(id)!);
 }
+
+export async function getTaskGraph(projectId: string, orgId: string) {
+  // Load all current, non-deleted tasks
+  const allTasks = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.project_id, projectId),
+        eq(tasks.organization_id, orgId),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at)
+      )
+    );
+
+  // Load all current edges
+  const allEdges = await db
+    .select()
+    .from(taskDependencies)
+    .where(isNull(taskDependencies.deleted_at));
+
+  const taskIds = new Set(allTasks.map((t) => t.task_id));
+
+  // Filter edges to only include those within this project's tasks
+  const edges = allEdges
+    .filter((e) => taskIds.has(e.task_id) && taskIds.has(e.depends_on_task_id))
+    .map((e) => ({
+      from: e.task_id,
+      to: e.depends_on_task_id,
+    }));
+
+  const nodes = allTasks.map((t) => ({
+    task_id: t.task_id,
+    display_id: t.display_id,
+    title: t.title,
+    type: t.type,
+    status: t.status,
+    priority: t.priority,
+  }));
+
+  return { nodes, edges };
+}
