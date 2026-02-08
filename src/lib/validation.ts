@@ -36,3 +36,12 @@ export const updateOrgSchema = z.object({
 export const changeRoleSchema = z.object({
   role: z.enum(["admin", "member"]),
 });
+
+export const createInvitationSchema = z.object({
+  email: z.email("Invalid email format"),
+  role: z.enum(["admin", "member"]).optional().default("member"),
+});
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+});
