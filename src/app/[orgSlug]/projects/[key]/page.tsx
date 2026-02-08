@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -69,6 +70,11 @@ export default function ProjectDetailPage({
           )}
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/${orgSlug}/projects/${key}/history`}>
+              History
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             Edit
           </Button>

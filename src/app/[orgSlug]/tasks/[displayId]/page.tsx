@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -20,7 +21,7 @@ export default function TaskDetailPage({
 }: {
   params: Promise<{ orgSlug: string; displayId: string }>;
 }) {
-  const { displayId } = use(params);
+  const { orgSlug, displayId } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
@@ -100,6 +101,11 @@ export default function TaskDetailPage({
               Close
             </Button>
           )}
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/${orgSlug}/tasks/${displayId}/history`}>
+              History
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             Edit
           </Button>
