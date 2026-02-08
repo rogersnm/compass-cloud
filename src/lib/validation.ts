@@ -18,3 +18,17 @@ export const refreshSchema = z.object({
 export const createApiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
 });
+
+export const createOrgSchema = z.object({
+  name: z.string().min(1, "Name is required").max(255),
+  slug: z
+    .string()
+    .min(1)
+    .max(63)
+    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
+    .optional(),
+});
+
+export const updateOrgSchema = z.object({
+  name: z.string().min(1, "Name is required").max(255).optional(),
+});

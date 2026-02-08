@@ -13,5 +13,9 @@ export default defineConfig({
     exclude: ["node_modules"],
     testTimeout: 15000,
     fileParallelism: false,
+    env: {
+      DATABASE_URL: "postgresql://compass:compass@localhost:5434/compass_test",
+      JWT_SECRET: "test-secret-key-for-vitest",
+    },
   },
 });
