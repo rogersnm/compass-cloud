@@ -121,8 +121,8 @@ export class StatelessStack extends cdk.Stack {
       taskDefinition: taskDef,
       desiredCount: 1,
       securityGroups: [serviceSg],
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      assignPublicIp: false,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      assignPublicIp: true,
     });
 
     // Import ACM wildcard certificate

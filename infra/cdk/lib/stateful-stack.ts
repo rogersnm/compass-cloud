@@ -13,10 +13,10 @@ export class StatefulStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // VPC: 3 AZs, public subnets for ALB, private subnets for ECS/RDS
+    // VPC: 2 tiers — public (ALB/ECS) and private isolated (RDS)
     this.vpc = new ec2.Vpc(this, 'Vpc', {
       maxAzs: 3,
-      natGateways: 1,
+      natGateways: 0,
       subnetConfiguration: [
         {
           name: 'Public',
@@ -25,11 +25,6 @@ export class StatefulStack extends cdk.Stack {
         },
         {
           name: 'Private',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
-        },
-        {
-          name: 'Isolated',
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
           cidrMask: 24,
         },
@@ -64,7 +59,7 @@ export class StatefulStack extends cdk.Stack {
         ec2.InstanceSize.MICRO
       ),
       vpc: this.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+      vpcSubnets: { subnetGroupName: 'Private' },
       securityGroups: [this.dbSecurityGroup],
       credentials: rds.Credentials.fromSecret(this.databaseSecret),
       databaseName: 'compass',

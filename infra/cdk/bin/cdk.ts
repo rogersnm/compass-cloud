@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
+import { BastionStack } from '../lib/bastion-stack';
 import { StatefulStack } from '../lib/stateful-stack';
 import { StatelessStack } from '../lib/stateless-stack';
 
@@ -17,5 +18,11 @@ new StatelessStack(app, 'CompassStateless', {
   vpc: stateful.vpc,
   database: stateful.database,
   databaseSecret: stateful.databaseSecret,
+  dbSecurityGroup: stateful.dbSecurityGroup,
+});
+
+new BastionStack(app, 'CompassBastion', {
+  env,
+  vpc: stateful.vpc,
   dbSecurityGroup: stateful.dbSecurityGroup,
 });
