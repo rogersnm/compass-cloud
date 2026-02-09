@@ -94,7 +94,7 @@ export async function search(params: {
       display_id: t.display_id,
       title: t.title,
       body: t.body,
-      status: t.status,
+      status: t.status ?? undefined,
       created_at: t.created_at,
     });
   }

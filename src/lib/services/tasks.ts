@@ -24,6 +24,9 @@ export async function createTask(params: {
   if (type === "epic" && params.epicTaskId) {
     throw new ValidationError("Epics cannot have a parent epic");
   }
+  if (type === "epic" && params.status) {
+    throw new ValidationError("Epics cannot have a status");
+  }
 
   // Get project to validate it exists and get project_id
   const [project] = await db
@@ -74,7 +77,7 @@ export async function createTask(params: {
       display_id: displayId,
       title: params.title,
       type,
-      status: params.status || "open",
+      status: type === "epic" ? null : (params.status || "open"),
       priority: params.priority ?? null,
       epic_task_id: params.epicTaskId || null,
       body: params.body || "",
@@ -108,6 +111,7 @@ export async function listTasks(
 
   if (filters.status) {
     conditions.push(eq(tasks.status, filters.status));
+    conditions.push(eq(tasks.type, "task"));
   }
   if (filters.type) {
     conditions.push(eq(tasks.type, filters.type));
@@ -179,6 +183,10 @@ export async function updateTask(
 ) {
   const current = await getTaskByDisplayId(displayId, orgId);
 
+  if (current.type === "epic" && updates.status) {
+    throw new ValidationError("Epics cannot have a status");
+  }
+
   // Mark old version as not current
   await db
     .update(tasks)
@@ -201,7 +209,7 @@ export async function updateTask(
       display_id: current.display_id,
       title: updates.title ?? current.title,
       type: current.type,
-      status: updates.status ?? current.status,
+      status: current.type === "epic" ? null : (updates.status ?? current.status),
       priority: updates.priority !== undefined ? updates.priority : current.priority,
       epic_task_id: current.epic_task_id,
       body: updates.body ?? current.body,
@@ -266,7 +274,7 @@ export async function deleteTask(
     display_id: current.display_id,
     title: current.title,
     type: current.type,
-    status: current.status,
+    status: current.type === "epic" ? null : current.status,
     priority: current.priority,
     epic_task_id: current.epic_task_id,
     body: current.body,
@@ -428,7 +436,7 @@ export async function getReadyTasks(projectId: string, orgId: string) {
     .where(isNull(taskDependencies.deleted_at));
 
   const taskMap = new Map(allTasks.map((t) => [t.task_id, t]));
-  const statusMap = new Map(allTasks.map((t) => [t.task_id, t.status]));
+  const statusMap = new Map(allTasks.map((t) => [t.task_id, t.status!]));
 
   // Build dependency map: task_id -> [depends_on_task_id]
   const depMap = new Map<string, string[]>();

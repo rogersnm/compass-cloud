@@ -219,7 +219,7 @@ export const tasks = pgTable(
     display_id: varchar("display_id", { length: 12 }).notNull(),
     title: varchar("title", { length: 500 }).notNull(),
     type: varchar("type", { length: 10 }).notNull().default("task"),
-    status: varchar("status", { length: 20 }).notNull().default("open"),
+    status: varchar("status", { length: 20 }),
     priority: integer("priority"),
     epic_task_id: text("epic_task_id"),
     body: text("body").notNull().default(""),
@@ -238,7 +238,7 @@ export const tasks = pgTable(
     ),
     check(
       "tasks_status_check",
-      sql`${table.status} IN ('open', 'in_progress', 'closed')`
+      sql`(${table.type} = 'epic' AND ${table.status} IS NULL) OR (${table.type} = 'task' AND ${table.status} IN ('open', 'in_progress', 'closed'))`
     ),
     check(
       "tasks_priority_check",

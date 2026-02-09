@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
+import { MarkdownRenderer } from "@/components/editor/markdown-renderer";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,8 +64,8 @@ export default function ProjectDetailPage({
             </Badge>
           </div>
           {project.body && (
-            <div className="prose prose-sm dark:prose-invert max-w-none pt-2">
-              <ReactMarkdown>{project.body}</ReactMarkdown>
+            <div className="pt-2">
+              <MarkdownRenderer content={project.body} />
             </div>
           )}
         </div>

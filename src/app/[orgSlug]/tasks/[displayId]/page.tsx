@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
+import { MarkdownRenderer } from "@/components/editor/markdown-renderer";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +83,7 @@ export default function TaskDetailPage({
           <h1 className="text-2xl font-bold tracking-tight">{task.title}</h1>
         </div>
         <div className="flex shrink-0 gap-2">
-          {task.status === "open" && (
+          {task.type !== "epic" && task.status === "open" && (
             <Button
               variant="outline"
               size="sm"
@@ -92,7 +92,7 @@ export default function TaskDetailPage({
               Start
             </Button>
           )}
-          {(task.status === "open" || task.status === "in_progress") && (
+          {task.type !== "epic" && (task.status === "open" || task.status === "in_progress") && (
             <Button
               variant="outline"
               size="sm"
@@ -123,15 +123,7 @@ export default function TaskDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
         <div>
-          {task.body ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{task.body}</ReactMarkdown>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">
-              No description.
-            </p>
-          )}
+          <MarkdownRenderer content={task.body} />
         </div>
         <aside className="space-y-4 text-sm">
           <div>

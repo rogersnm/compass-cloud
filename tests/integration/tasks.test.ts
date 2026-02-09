@@ -69,7 +69,7 @@ describe("task CRUD", () => {
     expect(task.display_id).toMatch(new RegExp(`^${projectKey}-T`));
   });
 
-  it("creates epic with no parent epic", async () => {
+  it("creates epic with null status", async () => {
     const epic = await createTask({
       projectKey,
       title: "My Epic",
@@ -79,7 +79,35 @@ describe("task CRUD", () => {
     });
 
     expect(epic.type).toBe("epic");
+    expect(epic.status).toBeNull();
     expect(epic.epic_task_id).toBeNull();
+  });
+
+  it("rejects status on epic creation", async () => {
+    await expect(
+      createTask({
+        projectKey,
+        title: "Bad Epic",
+        type: "epic",
+        status: "open",
+        orgId,
+        userId,
+      })
+    ).rejects.toThrow("Epics cannot have a status");
+  });
+
+  it("rejects status update on epic", async () => {
+    const epic = await createTask({
+      projectKey,
+      title: "My Epic",
+      type: "epic",
+      orgId,
+      userId,
+    });
+
+    await expect(
+      updateTask(epic.display_id, { status: "closed" }, orgId, userId)
+    ).rejects.toThrow("Epics cannot have a status");
   });
 
   it("rejects epic with parent epic", async () => {
@@ -239,9 +267,9 @@ describe("task CRUD", () => {
     const all = await listTasks(projectId, orgId);
     expect(all.data).toHaveLength(3);
 
-    // Filter by status (Open Task + Epic are both "open")
+    // Filter by status excludes epics (only tasks have status)
     const open = await listTasks(projectId, orgId, { status: "open" });
-    expect(open.data).toHaveLength(2);
+    expect(open.data).toHaveLength(1);
 
     const inProgress = await listTasks(projectId, orgId, { status: "in_progress" });
     expect(inProgress.data).toHaveLength(1);

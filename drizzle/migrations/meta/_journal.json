@@ -8,6 +8,13 @@
       "when": 1770567090714,
       "tag": "0000_illegal_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770668168296,
+      "tag": "0001_skinny_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }
