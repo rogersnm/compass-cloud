@@ -40,7 +40,6 @@ yarn-error.log*
 
 # compass
 .compass/
-.compass-project
 bastion.sh
 
 # playwright
