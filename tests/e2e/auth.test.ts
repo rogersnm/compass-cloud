@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Registration", () => {
-  test("registers a new user with org and redirects to dashboard", async ({
+  test("registers a new user and redirects to dashboard", async ({
     page,
   }) => {
     const ts = Date.now();
@@ -15,17 +15,12 @@ test.describe("Registration", () => {
     await page.getByLabel("Email").fill(`reg-${ts}@test.local`);
     await page.getByLabel("Password").fill("password123");
 
-    // Expand org fields
-    await page.getByText("Create an organization").click();
-    await page.getByLabel("Organization name").fill(`Reg Org ${ts}`);
-    await page.getByLabel("Organization slug").fill(`reg-${ts}`);
-
     await page.getByRole("button", { name: "Create account" }).click();
 
-    // Should redirect to the new org's dashboard
-    await expect(page).toHaveURL(`/reg-${ts}`, { timeout: 15_000 });
+    // Should redirect to /dashboard
+    await expect(page).toHaveURL("/dashboard", { timeout: 15_000 });
     await expect(
-      page.getByRole("heading", { name: "Dashboard" })
+      page.getByRole("heading", { name: "Your Organizations" })
     ).toBeVisible();
   });
 
@@ -45,7 +40,7 @@ test.describe("Registration", () => {
 });
 
 test.describe("Login", () => {
-  test("logs in successfully", async ({ page, account }) => {
+  test("logs in successfully and redirects to dashboard", async ({ page, account }) => {
     await page.goto("/login");
 
     await expect(
@@ -57,14 +52,8 @@ test.describe("Login", () => {
 
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    // After login, the app navigates away from /login
-    await expect(page).not.toHaveURL("/login", { timeout: 15_000 });
-
-    // Verify auth tokens were stored
-    const token = await page.evaluate(() =>
-      localStorage.getItem("compass_access_token")
-    );
-    expect(token).toBeTruthy();
+    // Should redirect to /dashboard
+    await expect(page).toHaveURL("/dashboard", { timeout: 15_000 });
   });
 
   test("rejects wrong password", async ({ page, account }) => {

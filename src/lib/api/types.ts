@@ -134,7 +134,6 @@ export interface LoginResponse {
 export interface RegisterResponse {
   user: User;
   access_token: string;
-  org: Organization | null;
 }
 
 export interface AuthMeResponse {

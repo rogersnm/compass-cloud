@@ -22,15 +22,10 @@ export interface AuthState {
   memberships: Membership[];
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    orgName?: string,
-    orgSlug?: string
-  ) => Promise<void>;
+  login: (email: string, password: string) => Promise<Membership[]>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshMemberships: () => Promise<void>;
   setCurrentOrg: (slug: string) => void;
 }
 
@@ -64,6 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hydrate().finally(() => setIsLoading(false));
   }, []);
 
+  const refreshMemberships = useCallback(async () => {
+    const res = await api.get<ApiResponse<AuthMeResponse>>("/auth/me");
+    setMemberships(res.data.memberships);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post<ApiResponse<LoginResponse>>("/auth/login", {
       email,
@@ -78,38 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (meRes.data.memberships.length > 0) {
       setOrgSlug(meRes.data.memberships[0].slug);
     }
+
+    return meRes.data.memberships;
   }, []);
 
   const register = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      orgName?: string,
-      orgSlugValue?: string
-    ) => {
-      const body: Record<string, string> = { name, email, password };
-      if (orgName) body.org_name = orgName;
-      if (orgSlugValue) body.org_slug = orgSlugValue;
-
+    async (name: string, email: string, password: string) => {
       const res = await api.post<ApiResponse<RegisterResponse>>(
         "/auth/register",
-        body
+        { name, email, password }
       );
       setTokens(res.data.access_token, "");
       setUser(res.data.user);
-
-      if (res.data.org) {
-        setOrgSlug(res.data.org.slug);
-        setMemberships([
-          {
-            organization_id: res.data.org.organization_id,
-            slug: res.data.org.slug,
-            name: res.data.org.name,
-            role: "admin",
-          },
-        ]);
-      }
+      setMemberships([]);
     },
     []
   );
@@ -147,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshMemberships,
         setCurrentOrg: handleSetCurrentOrg,
       }}
     >

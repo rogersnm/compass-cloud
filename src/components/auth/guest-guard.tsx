@@ -1,24 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/use-auth";
 
 /**
  * Wraps guest-only pages (login, register). Redirects authenticated
- * users to their first org's dashboard, or to /register if they have
- * no org yet.
+ * users to /dashboard.
  */
 export function GuestGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, memberships } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  if (isLoading) {
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
-  if (isAuthenticated) {
-    const slug = memberships[0]?.slug;
-    router.replace(slug ? `/${slug}` : "/");
+  if (isLoading || isAuthenticated) {
     return null;
   }
 

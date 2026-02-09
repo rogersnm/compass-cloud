@@ -23,7 +23,7 @@ export interface TestAccount {
 }
 
 /**
- * Register a user via the API and return credentials + access token.
+ * Register a user via the API, then create an org with a separate call.
  * Does NOT touch localStorage; callers inject tokens into the browser.
  */
 async function createAccount(
@@ -31,27 +31,45 @@ async function createAccount(
   workerId: string
 ): Promise<TestAccount> {
   const u = testUser(workerId);
-  const res = await fetch(`${baseURL}${API}/auth/register`, {
+
+  // 1. Register (no org params)
+  const regRes = await fetch(`${baseURL}${API}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: u.name,
       email: u.email,
       password: u.password,
-      org_name: u.orgName,
-      org_slug: u.orgSlug,
     }),
   });
-  if (!res.ok) {
-    throw new Error(`Register failed: ${res.status} ${await res.text()}`);
+  if (!regRes.ok) {
+    throw new Error(`Register failed: ${regRes.status} ${await regRes.text()}`);
   }
-  const json = await res.json();
+  const regJson = await regRes.json();
+  const accessToken: string = regJson.data.access_token;
+
+  // 2. Create org using the access token
+  const orgRes = await fetch(`${baseURL}${API}/orgs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      name: u.orgName,
+      slug: u.orgSlug,
+    }),
+  });
+  if (!orgRes.ok) {
+    throw new Error(`Create org failed: ${orgRes.status} ${await orgRes.text()}`);
+  }
+
   return {
     name: u.name,
     email: u.email,
     password: u.password,
     orgSlug: u.orgSlug,
-    accessToken: json.data.access_token,
+    accessToken,
   };
 }
 

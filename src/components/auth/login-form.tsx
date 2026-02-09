@@ -22,7 +22,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, memberships } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,13 +34,7 @@ export function LoginForm() {
     try {
       await login(email, password);
       const redirect = searchParams.get("redirect");
-      if (redirect) {
-        router.push(redirect);
-      } else if (memberships.length > 0) {
-        router.push(`/${memberships[0].slug}`);
-      } else {
-        router.push("/register");
-      }
+      router.push(redirect || "/dashboard");
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.error?.message ?? "Invalid credentials");
