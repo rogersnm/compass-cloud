@@ -49,7 +49,7 @@ export const acceptInvitationSchema = z.object({
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
   type: z.enum(["task", "epic"]).optional().default("task"),
-  status: z.enum(["open", "in_progress", "closed"]).optional().default("open"),
+  status: z.enum(["open", "in_progress", "closed"]).optional(),
   priority: z.number().int().min(0).max(3).nullable().optional(),
   epic_key: z.string().nullable().optional(),
   body: z.string().optional(),
