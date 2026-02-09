@@ -53,7 +53,7 @@ describe("task dependencies", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
 
     const deps = await getTaskDependencies(b.task_id);
     expect(deps).toEqual([a.task_id]);
@@ -63,10 +63,10 @@ describe("task dependencies", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
 
     await expect(
-      updateTaskDependencies(a.task_id, [b.task_id], orgId, projectId)
+      updateTaskDependencies(a.key, [b.key], orgId)
     ).rejects.toThrow("Cycle detected");
   });
 
@@ -74,7 +74,7 @@ describe("task dependencies", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
 
     await expect(
-      updateTaskDependencies(a.task_id, [a.task_id], orgId, projectId)
+      updateTaskDependencies(a.key, [a.key], orgId)
     ).rejects.toThrow("Task cannot depend on itself");
   });
 
@@ -89,7 +89,7 @@ describe("task dependencies", () => {
     const task = await createTask({ projectKey, title: "Task", orgId, userId });
 
     await expect(
-      updateTaskDependencies(task.task_id, [epic.task_id], orgId, projectId)
+      updateTaskDependencies(task.key, [epic.key], orgId)
     ).rejects.toThrow("Cannot depend on an epic");
   });
 
@@ -104,7 +104,7 @@ describe("task dependencies", () => {
     });
 
     await expect(
-      updateTaskDependencies(epic.task_id, [task.task_id], orgId, projectId)
+      updateTaskDependencies(epic.key, [task.key], orgId)
     ).rejects.toThrow("Epics cannot have dependencies");
   });
 
@@ -112,7 +112,7 @@ describe("task dependencies", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
 
     const statusMap = new Map([
       [a.task_id, "open"],
@@ -126,7 +126,7 @@ describe("task dependencies", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
 
     const statusMap = new Map([
       [a.task_id, "closed"],

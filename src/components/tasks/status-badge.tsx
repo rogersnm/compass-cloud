@@ -12,7 +12,14 @@ const statusLabels: Record<string, string> = {
   closed: "Closed",
 };
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status }: { status: string | null }) {
+  if (!status) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        N/A
+      </Badge>
+    );
+  }
   return (
     <Badge variant="outline" className={statusStyles[status]}>
       {statusLabels[status] ?? status}

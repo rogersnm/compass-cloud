@@ -285,52 +285,29 @@ export async function deleteTask(
 }
 
 export async function updateTaskDependencies(
-  taskId: string,
-  dependsOnIds: string[],
+  displayId: string,
+  dependsOnKeys: string[],
   orgId: string,
-  projectId: string
 ) {
-  // Load the task being updated
-  const [task] = await db
-    .select()
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.task_id, taskId),
-        eq(tasks.is_current, true),
-        isNull(tasks.deleted_at)
-      )
-    )
-    .limit(1);
-
-  if (!task) throw new NotFoundError("Task not found");
+  // Resolve the source task by display key
+  const task = await getTaskByDisplayId(displayId, orgId);
+  const taskId = task.task_id;
 
   if (task.type === "epic") {
     throw new ValidationError("Epics cannot have dependencies");
   }
 
-  // Validate targets exist and are not epics
-  for (const depId of dependsOnIds) {
-    if (depId === taskId) {
+  // Resolve dependency keys to task_ids
+  const resolvedDeps: string[] = [];
+  for (const depKey of dependsOnKeys) {
+    const dep = await getTaskByDisplayId(depKey, orgId);
+    if (dep.task_id === taskId) {
       throw new ValidationError("Task cannot depend on itself");
     }
-
-    const [dep] = await db
-      .select()
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.task_id, depId),
-          eq(tasks.is_current, true),
-          isNull(tasks.deleted_at)
-        )
-      )
-      .limit(1);
-
-    if (!dep) throw new NotFoundError(`Dependency task ${depId} not found`);
     if (dep.type === "epic") {
       throw new ValidationError("Cannot depend on an epic");
     }
+    resolvedDeps.push(dep.task_id);
   }
 
   // Load all current tasks in project for DAG validation
@@ -339,7 +316,7 @@ export async function updateTaskDependencies(
     .from(tasks)
     .where(
       and(
-        eq(tasks.project_id, projectId),
+        eq(tasks.project_id, task.project_id),
         eq(tasks.organization_id, orgId),
         eq(tasks.is_current, true),
         isNull(tasks.deleted_at)
@@ -358,7 +335,7 @@ export async function updateTaskDependencies(
     .filter((e) => e.task_id !== taskId)
     .map((e) => ({ from: e.task_id, to: e.depends_on_task_id }));
 
-  for (const depId of dependsOnIds) {
+  for (const depId of resolvedDeps) {
     edges.push({ from: taskId, to: depId });
   }
 
@@ -381,12 +358,27 @@ export async function updateTaskDependencies(
     );
 
   // Insert new dependencies
-  for (const depId of dependsOnIds) {
+  for (const depId of resolvedDeps) {
     await db.insert(taskDependencies).values({
       task_id: taskId,
       depends_on_task_id: depId,
     });
   }
+}
+
+export async function getProjectKeyByTaskProjectId(projectId: string): Promise<string> {
+  const [row] = await db
+    .select({ key: projects.key })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.project_id, projectId),
+        eq(projects.is_current, true),
+        isNull(projects.deleted_at)
+      )
+    )
+    .limit(1);
+  return row?.key ?? "";
 }
 
 export async function getTaskDependencies(taskId: string) {
@@ -401,6 +393,46 @@ export async function getTaskDependencies(taskId: string) {
     );
 
   return deps.map((d) => d.depends_on_task_id);
+}
+
+/** Resolve dependency task_ids to display keys for a set of tasks. */
+export async function getDependencyKeysMap(
+  taskIds: string[],
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (taskIds.length === 0) return result;
+
+  for (const id of taskIds) {
+    result.set(id, []);
+  }
+
+  const edges = await db
+    .select({
+      task_id: taskDependencies.task_id,
+      dep_key: tasks.key,
+    })
+    .from(taskDependencies)
+    .innerJoin(
+      tasks,
+      and(
+        eq(tasks.task_id, taskDependencies.depends_on_task_id),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at)
+      )
+    )
+    .where(
+      and(
+        sql`${taskDependencies.task_id} IN ${taskIds}`,
+        isNull(taskDependencies.deleted_at)
+      )
+    );
+
+  for (const e of edges) {
+    const arr = result.get(e.task_id);
+    if (arr) arr.push(e.dep_key);
+  }
+
+  return result;
 }
 
 export function isBlocked(

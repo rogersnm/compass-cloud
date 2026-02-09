@@ -72,7 +72,7 @@ describe("ready tasks", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
 
     const ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);
@@ -83,7 +83,7 @@ describe("ready tasks", () => {
     const a = await createTask({ projectKey, title: "A", orgId, userId });
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
     await updateTask(a.key, { status: "closed" }, orgId, userId);
 
     const ready = await getReadyTasks(projectId, orgId);
@@ -97,8 +97,8 @@ describe("ready tasks", () => {
     const c = await createTask({ projectKey, title: "C", orgId, userId });
 
     // C depends on B, B depends on A
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
-    await updateTaskDependencies(c.task_id, [b.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
+    await updateTaskDependencies(c.key, [b.key], orgId);
 
     // Close A so B becomes ready, but C is still blocked by B
     await updateTask(a.key, { status: "closed" }, orgId, userId);

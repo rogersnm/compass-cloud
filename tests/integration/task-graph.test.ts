@@ -68,8 +68,8 @@ describe("task graph", () => {
     const b = await createTask({ projectKey, title: "B", orgId, userId });
     const c = await createTask({ projectKey, title: "C", orgId, userId });
 
-    await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
-    await updateTaskDependencies(c.task_id, [a.task_id, b.task_id], orgId, projectId);
+    await updateTaskDependencies(b.key, [a.key], orgId);
+    await updateTaskDependencies(c.key, [a.key, b.key], orgId);
 
     const graph = await getTaskGraph(projectId, orgId);
     expect(graph.nodes).toHaveLength(3);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth/middleware";
 import { getProjectByKey } from "@/lib/services/projects";
-import { createTask, listTasks } from "@/lib/services/tasks";
+import { createTask, listTasks, getDependencyKeysMap, updateTaskDependencies } from "@/lib/services/tasks";
 import { createTaskSchema } from "@/lib/validation";
 import { errorResponse, ValidationError } from "@/lib/errors";
 
@@ -30,7 +30,18 @@ export async function POST(
       userId: auth.userId,
     });
 
-    return NextResponse.json({ data: task }, { status: 201 });
+    const dependsOnKeys = parsed.data.depends_on ?? [];
+    if (dependsOnKeys.length) {
+      await updateTaskDependencies(
+        task.key,
+        dependsOnKeys,
+        auth.organizationId,
+      );
+    }
+
+    return NextResponse.json({
+      data: { ...task, depends_on: dependsOnKeys },
+    }, { status: 201 });
   } catch (error) {
     return errorResponse(error);
   }
@@ -61,8 +72,15 @@ export async function GET(
       }
     );
 
+    const taskIds = result.data.map((t) => t.task_id);
+    const depsMap = await getDependencyKeysMap(taskIds);
+    const data = result.data.map((t) => ({
+      ...t,
+      depends_on: depsMap.get(t.task_id) ?? [],
+    }));
+
     return NextResponse.json({
-      data: result.data,
+      data,
       next_cursor: result.nextCursor,
     });
   } catch (error) {

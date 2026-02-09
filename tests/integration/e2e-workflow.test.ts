@@ -87,9 +87,9 @@ describe("E2E workflow", () => {
     });
 
     // Set up dependency chain: deploy -> (backend, frontend) -> setup
-    await updateTaskDependencies(backend.task_id, [setup.task_id], orgId, projectId);
-    await updateTaskDependencies(frontend.task_id, [setup.task_id], orgId, projectId);
-    await updateTaskDependencies(deploy.task_id, [backend.task_id, frontend.task_id], orgId, projectId);
+    await updateTaskDependencies(backend.key, [setup.key], orgId);
+    await updateTaskDependencies(frontend.key, [setup.key], orgId);
+    await updateTaskDependencies(deploy.key, [backend.key, frontend.key], orgId);
 
     // 3. Verify graph structure
     const graph = await getTaskGraph(projectId, orgId);
