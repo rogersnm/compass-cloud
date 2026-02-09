@@ -103,7 +103,7 @@ describe("task graph", () => {
     const graph = await getTaskGraph(projectId, orgId);
     const node = graph.nodes[0];
     expect(node.task_id).toBe(task.task_id);
-    expect(node.display_id).toBe(task.display_id);
+    expect(node.key).toBe(task.key);
     expect(node.title).toBe("Shaped");
     expect(node.type).toBe("task");
     expect(node.status).toBe("open");

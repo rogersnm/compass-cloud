@@ -13,7 +13,7 @@ export async function createTask(params: {
   type?: "task" | "epic";
   status?: "open" | "in_progress" | "closed";
   priority?: number | null;
-  epicTaskId?: string | null;
+  epicKey?: string | null;
   body?: string;
   orgId: string;
   userId: string;
@@ -21,7 +21,7 @@ export async function createTask(params: {
   const type = params.type || "task";
 
   // Validate epic constraints
-  if (type === "epic" && params.epicTaskId) {
+  if (type === "epic" && params.epicKey) {
     throw new ValidationError("Epics cannot have a parent epic");
   }
   if (type === "epic" && params.status) {
@@ -46,7 +46,7 @@ export async function createTask(params: {
     throw new NotFoundError("Project not found");
   }
 
-  // Generate display_id with collision retry
+  // Generate key with collision retry
   let displayId: string;
   let attempts = 0;
   while (true) {
@@ -57,7 +57,7 @@ export async function createTask(params: {
       .where(
         and(
           eq(tasks.organization_id, params.orgId),
-          eq(tasks.display_id, displayId),
+          eq(tasks.key, displayId),
           eq(tasks.is_current, true),
           isNull(tasks.deleted_at)
         )
@@ -74,12 +74,12 @@ export async function createTask(params: {
     .values({
       organization_id: params.orgId,
       project_id: project.project_id,
-      display_id: displayId,
+      key: displayId,
       title: params.title,
       type,
       status: type === "epic" ? null : (params.status || "open"),
       priority: params.priority ?? null,
-      epic_task_id: params.epicTaskId || null,
+      epic_key: params.epicKey || null,
       body: params.body || "",
       created_by_user_id: params.userId,
     })
@@ -117,7 +117,7 @@ export async function listTasks(
     conditions.push(eq(tasks.type, filters.type));
   }
   if (filters.epicId) {
-    conditions.push(eq(tasks.epic_task_id, filters.epicId));
+    conditions.push(eq(tasks.epic_key, filters.epicId));
   }
 
   if (filters.cursor) {
@@ -155,7 +155,7 @@ export async function getTaskByDisplayId(displayId: string, orgId: string) {
     .from(tasks)
     .where(
       and(
-        eq(tasks.display_id, displayId),
+        eq(tasks.key, displayId),
         eq(tasks.organization_id, orgId),
         eq(tasks.is_current, true),
         isNull(tasks.deleted_at)
@@ -206,12 +206,12 @@ export async function updateTask(
       version: current.version + 1,
       organization_id: current.organization_id,
       project_id: current.project_id,
-      display_id: current.display_id,
+      key: current.key,
       title: updates.title ?? current.title,
       type: current.type,
       status: current.type === "epic" ? null : (updates.status ?? current.status),
       priority: updates.priority !== undefined ? updates.priority : current.priority,
-      epic_task_id: current.epic_task_id,
+      epic_key: current.epic_key,
       body: updates.body ?? current.body,
       is_current: true,
       created_by_user_id: userId,
@@ -222,13 +222,13 @@ export async function updateTask(
 }
 
 export async function getTaskVersions(displayId: string, orgId: string) {
-  // Find the task_id from any row with this display_id in this org
+  // Find the task_id from any row with this key in this org
   const [any] = await db
     .select({ task_id: tasks.task_id })
     .from(tasks)
     .where(
       and(
-        eq(tasks.display_id, displayId),
+        eq(tasks.key, displayId),
         eq(tasks.organization_id, orgId)
       )
     )
@@ -271,12 +271,12 @@ export async function deleteTask(
     version: current.version + 1,
     organization_id: current.organization_id,
     project_id: current.project_id,
-    display_id: current.display_id,
+    key: current.key,
     title: current.title,
     type: current.type,
     status: current.type === "epic" ? null : current.status,
     priority: current.priority,
-    epic_task_id: current.epic_task_id,
+    epic_key: current.epic_key,
     body: current.body,
     is_current: false,
     created_by_user_id: userId,
@@ -501,7 +501,7 @@ export async function getTaskGraph(projectId: string, orgId: string) {
 
   const nodes = allTasks.map((t) => ({
     task_id: t.task_id,
-    display_id: t.display_id,
+    key: t.key,
     title: t.title,
     type: t.type,
     status: t.status,

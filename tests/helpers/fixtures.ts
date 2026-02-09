@@ -81,7 +81,7 @@ export async function createTestTask(
 ) {
   const db = getTestDB();
   const data: TaskInsert = {
-    display_id: `TST-T${crypto.randomUUID().slice(0, 5).toUpperCase()}`,
+    key: `TST-T${crypto.randomUUID().slice(0, 5).toUpperCase()}`,
     title: "Test Task",
     ...overrides,
   };
@@ -98,7 +98,7 @@ export async function createTestDocument(
 ) {
   const db = getTestDB();
   const data: DocumentInsert = {
-    display_id: `TST-D${crypto.randomUUID().slice(0, 5).toUpperCase()}`,
+    key: `TST-D${crypto.randomUUID().slice(0, 5).toUpperCase()}`,
     title: "Test Document",
     ...overrides,
   };

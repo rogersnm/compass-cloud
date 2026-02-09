@@ -15,10 +15,10 @@ import type { Document, PaginatedResponse } from "@/lib/api/types";
 
 const columns: Column<Document>[] = [
   {
-    key: "display_id",
+    key: "key",
     header: "ID",
     render: (d) => (
-      <span className="font-mono text-xs">{d.display_id}</span>
+      <span className="font-mono text-xs">{d.key}</span>
     ),
     className: "w-28",
   },
@@ -84,7 +84,7 @@ export function DocumentList({ projectKey, orgSlug }: DocumentListProps) {
             columns={columns}
             data={data.data}
             onRowClick={(d) =>
-              router.push(`/${orgSlug}/documents/${d.display_id}`)
+              router.push(`/${orgSlug}/documents/${d.key}`)
             }
             keyExtractor={(d) => d.document_id}
           />

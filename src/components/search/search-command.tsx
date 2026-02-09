@@ -90,10 +90,10 @@ export function SearchCommand({
         router.push(`/${orgSlug}/projects/${result.project_key ?? result.id}`);
         break;
       case "task":
-        router.push(`/${orgSlug}/tasks/${result.display_id}`);
+        router.push(`/${orgSlug}/tasks/${result.key}`);
         break;
       case "document":
-        router.push(`/${orgSlug}/documents/${result.display_id}`);
+        router.push(`/${orgSlug}/documents/${result.key}`);
         break;
     }
   }
@@ -161,7 +161,7 @@ export function SearchCommand({
               >
                 {TYPE_ICONS.task}
                 <span className="font-mono text-xs text-muted-foreground mr-2">
-                  {r.display_id}
+                  {r.key}
                 </span>
                 <span className="truncate">{r.title}</span>
                 {r.status && (
@@ -183,7 +183,7 @@ export function SearchCommand({
               >
                 {TYPE_ICONS.document}
                 <span className="font-mono text-xs text-muted-foreground mr-2">
-                  {r.display_id}
+                  {r.key}
                 </span>
                 <span className="truncate">{r.title}</span>
               </CommandItem>

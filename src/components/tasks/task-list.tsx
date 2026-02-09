@@ -19,10 +19,10 @@ import type { PaginatedResponse, Task } from "@/lib/api/types";
 
 const columns: Column<Task>[] = [
   {
-    key: "display_id",
+    key: "key",
     header: "ID",
     render: (t) => (
-      <span className="font-mono text-xs">{t.display_id}</span>
+      <span className="font-mono text-xs">{t.key}</span>
     ),
     className: "w-28",
   },
@@ -122,7 +122,7 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
           <DataTable
             columns={columns}
             data={data.data}
-            onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.display_id}`)}
+            onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.key}`)}
             keyExtractor={(t) => t.task_id}
           />
           <Pagination

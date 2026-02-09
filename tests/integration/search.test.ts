@@ -74,7 +74,7 @@ describe("cross-entity search", () => {
     const results = await search({ query: "Search", orgId });
     expect(results).toHaveLength(1);
     expect(results[0].type).toBe("project");
-    expect(results[0].display_id).toBe("SRCH");
+    expect(results[0].key).toBe("SRCH");
   });
 
   it("is case-insensitive", async () => {

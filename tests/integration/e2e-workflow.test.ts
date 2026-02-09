@@ -102,8 +102,8 @@ describe("E2E workflow", () => {
     expect(ready[0].task_id).toBe(setup.task_id);
 
     // 5. Work through the chain
-    await updateTask(setup.display_id, { status: "in_progress" }, orgId, userId);
-    await updateTask(setup.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(setup.key, { status: "in_progress" }, orgId, userId);
+    await updateTask(setup.key, { status: "closed" }, orgId, userId);
 
     ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(2);
@@ -111,14 +111,14 @@ describe("E2E workflow", () => {
     expect(readyIds).toContain(backend.task_id);
     expect(readyIds).toContain(frontend.task_id);
 
-    await updateTask(backend.display_id, { status: "closed" }, orgId, userId);
-    await updateTask(frontend.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(backend.key, { status: "closed" }, orgId, userId);
+    await updateTask(frontend.key, { status: "closed" }, orgId, userId);
 
     ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);
     expect(ready[0].task_id).toBe(deploy.task_id);
 
-    await updateTask(deploy.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(deploy.key, { status: "closed" }, orgId, userId);
 
     ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(0);
@@ -134,7 +134,7 @@ describe("E2E workflow", () => {
     expect(doc.version).toBe(1);
 
     const updatedDoc = await updateDocument(
-      doc.display_id,
+      doc.key,
       { body: "We chose Next.js for the API server. Updated with deployment notes." },
       orgId,
       userId
@@ -173,11 +173,11 @@ describe("E2E workflow", () => {
 
     // Tasks and docs should be gone too
     await expect(
-      getTaskByDisplayId(setup.display_id, orgId)
+      getTaskByDisplayId(setup.key, orgId)
     ).rejects.toThrow("Task not found");
 
     await expect(
-      getDocumentByDisplayId(doc.display_id, orgId)
+      getDocumentByDisplayId(doc.key, orgId)
     ).rejects.toThrow("Document not found");
   });
 

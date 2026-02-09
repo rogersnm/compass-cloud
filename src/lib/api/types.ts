@@ -39,12 +39,12 @@ export interface Task {
   version: number;
   organization_id: string;
   project_id: string;
-  display_id: string;
+  key: string;
   title: string;
   type: "task" | "epic";
   status: "open" | "in_progress" | "closed";
   priority: number | null;
-  epic_task_id: string | null;
+  epic_key: string | null;
   body: string;
   is_current: boolean;
   created_by_user_id: string;
@@ -57,7 +57,7 @@ export interface Document {
   version: number;
   organization_id: string;
   project_id: string;
-  display_id: string;
+  key: string;
   title: string;
   body: string;
   is_current: boolean;
@@ -97,7 +97,7 @@ export interface ApiKey {
 export interface SearchResult {
   type: "project" | "task" | "document";
   id: string;
-  display_id: string;
+  key: string;
   title: string;
   body: string;
   status?: string;

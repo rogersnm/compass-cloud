@@ -24,7 +24,7 @@ export async function POST(
       type: parsed.data.type,
       status: parsed.data.status,
       priority: parsed.data.priority,
-      epicTaskId: parsed.data.epic_task_id,
+      epicKey: parsed.data.epic_key,
       body: parsed.data.body,
       orgId: auth.organizationId,
       userId: auth.userId,

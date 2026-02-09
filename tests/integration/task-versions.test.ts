@@ -48,7 +48,7 @@ describe("task version history", () => {
       orgId,
       userId,
     });
-    const versions = await getTaskVersions(task.display_id, orgId);
+    const versions = await getTaskVersions(task.key, orgId);
 
     expect(versions).toHaveLength(1);
     expect(versions[0].version).toBe(1);
@@ -63,10 +63,10 @@ describe("task version history", () => {
       orgId,
       userId,
     });
-    await updateTask(task.display_id, { title: "Updated" }, orgId, userId);
-    await updateTask(task.display_id, { title: "Final", status: "closed" }, orgId, userId);
+    await updateTask(task.key, { title: "Updated" }, orgId, userId);
+    await updateTask(task.key, { title: "Final", status: "closed" }, orgId, userId);
 
-    const versions = await getTaskVersions(task.display_id, orgId);
+    const versions = await getTaskVersions(task.key, orgId);
 
     expect(versions).toHaveLength(3);
     expect(versions[0].version).toBe(3);
@@ -88,10 +88,10 @@ describe("task version history", () => {
       orgId,
       userId,
     });
-    await updateTask(task.display_id, { title: "Before Delete" }, orgId, userId);
-    await deleteTask(task.display_id, orgId, userId);
+    await updateTask(task.key, { title: "Before Delete" }, orgId, userId);
+    await deleteTask(task.key, orgId, userId);
 
-    const versions = await getTaskVersions(task.display_id, orgId);
+    const versions = await getTaskVersions(task.key, orgId);
 
     expect(versions.length).toBeGreaterThanOrEqual(2);
     const deletedVersions = versions.filter((v) => v.deleted_at !== null);

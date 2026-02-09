@@ -66,7 +66,7 @@ describe("task CRUD", () => {
     expect(task.status).toBe("open");
     expect(task.version).toBe(1);
     expect(task.is_current).toBe(true);
-    expect(task.display_id).toMatch(new RegExp(`^${projectKey}-T`));
+    expect(task.key).toMatch(new RegExp(`^${projectKey}-T`));
   });
 
   it("creates epic with null status", async () => {
@@ -80,7 +80,7 @@ describe("task CRUD", () => {
 
     expect(epic.type).toBe("epic");
     expect(epic.status).toBeNull();
-    expect(epic.epic_task_id).toBeNull();
+    expect(epic.epic_key).toBeNull();
   });
 
   it("rejects status on epic creation", async () => {
@@ -106,7 +106,7 @@ describe("task CRUD", () => {
     });
 
     await expect(
-      updateTask(epic.display_id, { status: "closed" }, orgId, userId)
+      updateTask(epic.key, { status: "closed" }, orgId, userId)
     ).rejects.toThrow("Epics cannot have a status");
   });
 
@@ -124,7 +124,7 @@ describe("task CRUD", () => {
         projectKey,
         title: "Child Epic",
         type: "epic",
-        epicTaskId: parentEpic.task_id,
+        epicKey: parentEpic.key,
         orgId,
         userId,
       })
@@ -143,12 +143,12 @@ describe("task CRUD", () => {
     const task = await createTask({
       projectKey,
       title: "Epic Task",
-      epicTaskId: epic.task_id,
+      epicKey: epic.key,
       orgId,
       userId,
     });
 
-    expect(task.epic_task_id).toBe(epic.task_id);
+    expect(task.epic_key).toBe(epic.key);
   });
 
   it("updates task title (creates new version)", async () => {
@@ -160,7 +160,7 @@ describe("task CRUD", () => {
     });
 
     const updated = await updateTask(
-      task.display_id,
+      task.key,
       { title: "Updated" },
       orgId,
       userId
@@ -191,7 +191,7 @@ describe("task CRUD", () => {
     });
 
     const started = await updateTask(
-      task.display_id,
+      task.key,
       { status: "in_progress" },
       orgId,
       userId
@@ -199,7 +199,7 @@ describe("task CRUD", () => {
     expect(started.status).toBe("in_progress");
 
     const closed = await updateTask(
-      task.display_id,
+      task.key,
       { status: "closed" },
       orgId,
       userId
@@ -219,7 +219,7 @@ describe("task CRUD", () => {
     expect(task.priority).toBe(2);
 
     const cleared = await updateTask(
-      task.display_id,
+      task.key,
       { priority: null },
       orgId,
       userId
@@ -235,10 +235,10 @@ describe("task CRUD", () => {
       userId,
     });
 
-    await deleteTask(task.display_id, orgId, userId);
+    await deleteTask(task.key, orgId, userId);
 
     await expect(
-      getTaskByDisplayId(task.display_id, orgId)
+      getTaskByDisplayId(task.key, orgId)
     ).rejects.toThrow("Task not found");
 
     // But the rows still exist in DB
@@ -254,7 +254,7 @@ describe("task CRUD", () => {
   it("lists tasks with filters", async () => {
     await createTask({ projectKey, title: "Open Task", orgId, userId });
     const t2 = await createTask({ projectKey, title: "Started Task", orgId, userId });
-    await updateTask(t2.display_id, { status: "in_progress" }, orgId, userId);
+    await updateTask(t2.key, { status: "in_progress" }, orgId, userId);
     await createTask({
       projectKey,
       title: "Epic",

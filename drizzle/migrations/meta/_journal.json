@@ -15,6 +15,13 @@
       "when": 1770668168296,
       "tag": "0001_skinny_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770768168296,
+      "tag": "0002_rename_display_id_to_key",
+      "breakpoints": true
     }
   ]
 }

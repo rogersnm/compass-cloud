@@ -43,7 +43,7 @@ export function DocumentForm({
     try {
       if (isEdit) {
         await api.patch<ApiResponse<Document>>(
-          `/documents/${document.display_id}`,
+          `/documents/${document.key}`,
           { title: title || undefined, body }
         );
       } else {

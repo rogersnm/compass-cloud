@@ -48,7 +48,7 @@ describe("document version history", () => {
       orgId,
       userId,
     });
-    const versions = await getDocumentVersions(doc.display_id, orgId);
+    const versions = await getDocumentVersions(doc.key, orgId);
 
     expect(versions).toHaveLength(1);
     expect(versions[0].version).toBe(1);
@@ -64,10 +64,10 @@ describe("document version history", () => {
       orgId,
       userId,
     });
-    await updateDocument(doc.display_id, { title: "Revised" }, orgId, userId);
-    await updateDocument(doc.display_id, { body: "final content" }, orgId, userId);
+    await updateDocument(doc.key, { title: "Revised" }, orgId, userId);
+    await updateDocument(doc.key, { body: "final content" }, orgId, userId);
 
-    const versions = await getDocumentVersions(doc.display_id, orgId);
+    const versions = await getDocumentVersions(doc.key, orgId);
 
     expect(versions).toHaveLength(3);
     expect(versions[0].version).toBe(3);
@@ -88,10 +88,10 @@ describe("document version history", () => {
       orgId,
       userId,
     });
-    await updateDocument(doc.display_id, { title: "Before Delete" }, orgId, userId);
-    await deleteDocument(doc.display_id, orgId, userId);
+    await updateDocument(doc.key, { title: "Before Delete" }, orgId, userId);
+    await deleteDocument(doc.key, orgId, userId);
 
-    const versions = await getDocumentVersions(doc.display_id, orgId);
+    const versions = await getDocumentVersions(doc.key, orgId);
 
     expect(versions.length).toBeGreaterThanOrEqual(2);
     const deletedVersions = versions.filter((v) => v.deleted_at !== null);

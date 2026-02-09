@@ -65,7 +65,7 @@ describe("document CRUD", () => {
     expect(doc.body).toBe("");
     expect(doc.version).toBe(1);
     expect(doc.is_current).toBe(true);
-    expect(doc.display_id).toMatch(new RegExp(`^${projectKey}-D`));
+    expect(doc.key).toMatch(new RegExp(`^${projectKey}-D`));
   });
 
   it("creates document with body", async () => {
@@ -89,7 +89,7 @@ describe("document CRUD", () => {
       userId,
     });
 
-    const found = await getDocumentByDisplayId(doc.display_id, orgId);
+    const found = await getDocumentByDisplayId(doc.key, orgId);
     expect(found.document_id).toBe(doc.document_id);
     expect(found.title).toBe("Lookup Test");
   });
@@ -109,7 +109,7 @@ describe("document CRUD", () => {
     });
 
     const updated = await updateDocument(
-      doc.display_id,
+      doc.key,
       { title: "Updated" },
       orgId,
       userId
@@ -140,7 +140,7 @@ describe("document CRUD", () => {
     });
 
     const updated = await updateDocument(
-      doc.display_id,
+      doc.key,
       { body: "new content" },
       orgId,
       userId
@@ -158,10 +158,10 @@ describe("document CRUD", () => {
       userId,
     });
 
-    await deleteDocument(doc.display_id, orgId, userId);
+    await deleteDocument(doc.key, orgId, userId);
 
     await expect(
-      getDocumentByDisplayId(doc.display_id, orgId)
+      getDocumentByDisplayId(doc.key, orgId)
     ).rejects.toThrow("Document not found");
 
     // But the rows still exist in DB

@@ -122,7 +122,7 @@ describe("project CRUD", () => {
     await db.insert(tasks).values({
       organization_id: orgId,
       project_id: project.project_id,
-      display_id: "DEL-T23456",
+      key: "DEL-T23456",
       title: "Test Task",
       created_by_user_id: userId,
     });
@@ -130,7 +130,7 @@ describe("project CRUD", () => {
     await db.insert(documents).values({
       organization_id: orgId,
       project_id: project.project_id,
-      display_id: "DEL-D23456",
+      key: "DEL-D23456",
       title: "Test Doc",
       created_by_user_id: userId,
     });
@@ -148,14 +148,14 @@ describe("project CRUD", () => {
     const [task] = await db
       .select()
       .from(tasks)
-      .where(eq(tasks.display_id, "DEL-T23456"));
+      .where(eq(tasks.key, "DEL-T23456"));
     expect(task.deleted_at).not.toBeNull();
 
     // Verify doc is soft-deleted
     const [doc] = await db
       .select()
       .from(documents)
-      .where(eq(documents.display_id, "DEL-D23456"));
+      .where(eq(documents.key, "DEL-D23456"));
     expect(doc.deleted_at).not.toBeNull();
   });
 });

@@ -216,12 +216,12 @@ export const tasks = pgTable(
     version: integer("version").notNull().default(1),
     organization_id: text("organization_id").notNull(),
     project_id: text("project_id").notNull(),
-    display_id: varchar("display_id", { length: 12 }).notNull(),
+    key: varchar("key", { length: 12 }).notNull(),
     title: varchar("title", { length: 500 }).notNull(),
     type: varchar("type", { length: 10 }).notNull().default("task"),
     status: varchar("status", { length: 20 }),
     priority: integer("priority"),
-    epic_task_id: text("epic_task_id"),
+    epic_key: text("epic_key"),
     body: text("body").notNull().default(""),
     is_current: boolean("is_current").notNull().default(true),
     created_by_user_id: text("created_by_user_id").notNull(),
@@ -244,8 +244,8 @@ export const tasks = pgTable(
       "tasks_priority_check",
       sql`${table.priority} IS NULL OR (${table.priority} >= 0 AND ${table.priority} <= 3)`
     ),
-    uniqueIndex("tasks_org_display_id_unique")
-      .on(table.organization_id, table.display_id)
+    uniqueIndex("tasks_org_key_unique")
+      .on(table.organization_id, table.key)
       .where(
         sql`${table.is_current} = true AND ${table.deleted_at} IS NULL`
       ),
@@ -255,7 +255,7 @@ export const tasks = pgTable(
         sql`${table.is_current} = true AND ${table.deleted_at} IS NULL`
       ),
     index("tasks_epic_idx")
-      .on(table.epic_task_id)
+      .on(table.epic_key)
       .where(
         sql`${table.is_current} = true AND ${table.deleted_at} IS NULL`
       ),
@@ -291,7 +291,7 @@ export const documents = pgTable(
     version: integer("version").notNull().default(1),
     organization_id: text("organization_id").notNull(),
     project_id: text("project_id").notNull(),
-    display_id: varchar("display_id", { length: 12 }).notNull(),
+    key: varchar("key", { length: 12 }).notNull(),
     title: varchar("title", { length: 500 }).notNull(),
     body: text("body").notNull().default(""),
     is_current: boolean("is_current").notNull().default(true),
@@ -303,8 +303,8 @@ export const documents = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.document_id, table.version] }),
-    uniqueIndex("documents_org_display_id_unique")
-      .on(table.organization_id, table.display_id)
+    uniqueIndex("documents_org_key_unique")
+      .on(table.organization_id, table.key)
       .where(
         sql`${table.is_current} = true AND ${table.deleted_at} IS NULL`
       ),

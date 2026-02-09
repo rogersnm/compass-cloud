@@ -61,7 +61,7 @@ describe("ready tasks", () => {
   it("excludes closed tasks", async () => {
     await createTask({ projectKey, title: "Open", orgId, userId });
     const closed = await createTask({ projectKey, title: "Closed", orgId, userId });
-    await updateTask(closed.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(closed.key, { status: "closed" }, orgId, userId);
 
     const ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);
@@ -84,7 +84,7 @@ describe("ready tasks", () => {
     const b = await createTask({ projectKey, title: "B", orgId, userId });
 
     await updateTaskDependencies(b.task_id, [a.task_id], orgId, projectId);
-    await updateTask(a.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(a.key, { status: "closed" }, orgId, userId);
 
     const ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);
@@ -101,14 +101,14 @@ describe("ready tasks", () => {
     await updateTaskDependencies(c.task_id, [b.task_id], orgId, projectId);
 
     // Close A so B becomes ready, but C is still blocked by B
-    await updateTask(a.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(a.key, { status: "closed" }, orgId, userId);
 
     const ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);
     expect(ready[0].task_id).toBe(b.task_id);
 
     // Close B, now C is ready
-    await updateTask(b.display_id, { status: "closed" }, orgId, userId);
+    await updateTask(b.key, { status: "closed" }, orgId, userId);
     const ready2 = await getReadyTasks(projectId, orgId);
     expect(ready2).toHaveLength(1);
     expect(ready2[0].task_id).toBe(c.task_id);
@@ -125,7 +125,7 @@ describe("ready tasks", () => {
 
   it("includes in_progress tasks", async () => {
     const t = await createTask({ projectKey, title: "Started", orgId, userId });
-    await updateTask(t.display_id, { status: "in_progress" }, orgId, userId);
+    await updateTask(t.key, { status: "in_progress" }, orgId, userId);
 
     const ready = await getReadyTasks(projectId, orgId);
     expect(ready).toHaveLength(1);

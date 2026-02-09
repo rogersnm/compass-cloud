@@ -51,7 +51,7 @@ export const createTaskSchema = z.object({
   type: z.enum(["task", "epic"]).optional().default("task"),
   status: z.enum(["open", "in_progress", "closed"]).optional().default("open"),
   priority: z.number().int().min(0).max(3).nullable().optional(),
-  epic_task_id: z.string().nullable().optional(),
+  epic_key: z.string().nullable().optional(),
   body: z.string().optional(),
 });
 

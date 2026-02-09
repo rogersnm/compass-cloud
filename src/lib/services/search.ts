@@ -5,7 +5,7 @@ import { eq, and, isNull, sql, desc } from "drizzle-orm";
 export type SearchResult = {
   type: "project" | "task" | "document";
   id: string;
-  display_id: string;
+  key: string;
   title: string;
   body: string;
   status?: string;
@@ -80,7 +80,7 @@ export async function search(params: {
     results.push({
       type: "project",
       id: p.project_id,
-      display_id: p.key,
+      key: p.key,
       title: p.name,
       body: p.body,
       created_at: p.created_at,
@@ -91,7 +91,7 @@ export async function search(params: {
     results.push({
       type: "task",
       id: t.task_id,
-      display_id: t.display_id,
+      key: t.key,
       title: t.title,
       body: t.body,
       status: t.status ?? undefined,
@@ -103,7 +103,7 @@ export async function search(params: {
     results.push({
       type: "document",
       id: d.document_id,
-      display_id: d.display_id,
+      key: d.key,
       title: d.title,
       body: d.body,
       created_at: d.created_at,

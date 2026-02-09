@@ -37,9 +37,15 @@ async function main() {
     return;
   }
 
-  console.log("Running migrations...");
-  await migrate(db, { migrationsFolder: "./drizzle/migrations" });
-  console.log("Migrations complete.");
+  console.log("Acquiring migration lock...");
+  await client`SELECT pg_advisory_lock(728379)`;
+  try {
+    console.log("Running migrations...");
+    await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+    console.log("Migrations complete.");
+  } finally {
+    await client`SELECT pg_advisory_unlock(728379)`;
+  }
 
   await client.end();
 }

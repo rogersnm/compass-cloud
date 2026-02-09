@@ -84,7 +84,7 @@ export default function DocumentDetailPage({
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <span className="font-mono text-sm text-muted-foreground">
-            {doc.display_id}
+            {doc.key}
           </span>
           {editing ? (
             <input

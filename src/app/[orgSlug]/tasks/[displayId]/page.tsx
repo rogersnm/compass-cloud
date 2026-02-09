@@ -63,8 +63,8 @@ export default function TaskDetailPage({
   if (isLoading) return <CardSkeleton />;
   if (!task) return <p className="text-muted-foreground">Task not found.</p>;
 
-  // Determine the project key from display_id (format: KEY-T12345)
-  const projectKey = task.display_id.split("-")[0];
+  // Determine the project key from key (format: KEY-T12345)
+  const projectKey = task.key.split("-")[0];
 
   return (
     <div className="space-y-6">
@@ -72,7 +72,7 @@ export default function TaskDetailPage({
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm text-muted-foreground">
-              {task.display_id}
+              {task.key}
             </span>
             <StatusBadge status={task.status} />
             <PriorityBadge priority={task.priority} />

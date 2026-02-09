@@ -30,7 +30,7 @@ export async function createDocument(params: {
     throw new NotFoundError("Project not found");
   }
 
-  // Generate display_id with collision retry
+  // Generate key with collision retry
   let displayId: string;
   let attempts = 0;
   while (true) {
@@ -41,7 +41,7 @@ export async function createDocument(params: {
       .where(
         and(
           eq(documents.organization_id, params.orgId),
-          eq(documents.display_id, displayId),
+          eq(documents.key, displayId),
           eq(documents.is_current, true),
           isNull(documents.deleted_at)
         )
@@ -58,7 +58,7 @@ export async function createDocument(params: {
     .values({
       organization_id: params.orgId,
       project_id: project.project_id,
-      display_id: displayId,
+      key: displayId,
       title: params.title,
       body: params.body || "",
       created_by_user_id: params.userId,
@@ -121,7 +121,7 @@ export async function getDocumentByDisplayId(displayId: string, orgId: string) {
     .from(documents)
     .where(
       and(
-        eq(documents.display_id, displayId),
+        eq(documents.key, displayId),
         eq(documents.organization_id, orgId),
         eq(documents.is_current, true),
         isNull(documents.deleted_at)
@@ -166,7 +166,7 @@ export async function updateDocument(
       version: current.version + 1,
       organization_id: current.organization_id,
       project_id: current.project_id,
-      display_id: current.display_id,
+      key: current.key,
       title: updates.title ?? current.title,
       body: updates.body ?? current.body,
       is_current: true,
@@ -178,13 +178,13 @@ export async function updateDocument(
 }
 
 export async function getDocumentVersions(displayId: string, orgId: string) {
-  // Find the document_id from any row with this display_id in this org
+  // Find the document_id from any row with this key in this org
   const [any] = await db
     .select({ document_id: documents.document_id })
     .from(documents)
     .where(
       and(
-        eq(documents.display_id, displayId),
+        eq(documents.key, displayId),
         eq(documents.organization_id, orgId)
       )
     )
@@ -227,7 +227,7 @@ export async function deleteDocument(
     version: current.version + 1,
     organization_id: current.organization_id,
     project_id: current.project_id,
-    display_id: current.display_id,
+    key: current.key,
     title: current.title,
     body: current.body,
     is_current: false,

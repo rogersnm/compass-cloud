@@ -53,7 +53,7 @@ export function TaskForm({ open, onOpenChange, projectKey, task }: TaskFormProps
 
     try {
       if (isEdit) {
-        await api.patch<ApiResponse<Task>>(`/tasks/${task.display_id}`, {
+        await api.patch<ApiResponse<Task>>(`/tasks/${task.key}`, {
           title: title || undefined,
           status,
           priority: priorityVal,

@@ -81,7 +81,7 @@ async function seedTask(
   if (!taskRes.ok) throw new Error(`Create task failed: ${taskRes.status}`);
   const task = await taskRes.json();
 
-  return { projectKey, displayId: task.data.display_id as string };
+  return { projectKey, displayId: task.data.key as string };
 }
 
 test.describe("Task markdown rendering", () => {
