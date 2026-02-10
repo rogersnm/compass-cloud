@@ -13,6 +13,7 @@ import { ProjectForm } from "@/components/projects/project-form";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CardSkeleton } from "@/components/shared/loading-skeleton";
 import { TaskList } from "@/components/tasks/task-list";
+import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { DocumentList } from "@/components/documents/document-list";
 import type { ApiError, ApiResponse, Project } from "@/lib/api/types";
 
@@ -91,10 +92,14 @@ export default function ProjectDetailPage({
       <Tabs defaultValue="tasks">
         <TabsList>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="board">Board</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="tasks" className="pt-4">
           <TaskList projectKey={key} orgSlug={orgSlug} />
+        </TabsContent>
+        <TabsContent value="board" className="pt-4">
+          <KanbanBoard projectKey={key} orgSlug={orgSlug} />
         </TabsContent>
         <TabsContent value="documents" className="pt-4">
           <DocumentList projectKey={key} orgSlug={orgSlug} />

@@ -5,6 +5,7 @@ import {
   timestamp,
   boolean,
   integer,
+  doublePrecision,
   primaryKey,
   uniqueIndex,
   index,
@@ -279,6 +280,13 @@ export const taskDependencies = pgTable(
     ),
   ]
 );
+
+// ── Task Positions ────────────────────────────────────────────────────
+
+export const taskPositions = pgTable("task_positions", {
+  task_id: text("task_id").primaryKey(),
+  position: doublePrecision("position").notNull().default(0),
+});
 
 // ── Documents (versioned) ──────────────────────────────────────────────
 

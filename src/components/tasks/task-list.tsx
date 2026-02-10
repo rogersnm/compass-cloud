@@ -64,6 +64,13 @@ const columns: Column<Task>[] = [
   },
 ];
 
+const STATUS_ORDER = ["in_progress", "open", "closed"] as const;
+const STATUS_LABELS: Record<string, string> = {
+  in_progress: "In Progress",
+  open: "Open",
+  closed: "Closed",
+};
+
 interface TaskListProps {
   projectKey: string;
   orgSlug: string;
@@ -89,6 +96,17 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         `/projects/${projectKey}/tasks?${params.toString()}`
       ),
   });
+
+  const hasFilter = status !== "all";
+
+  // Group tasks by status for sectioned view
+  const sections = !hasFilter && data
+    ? STATUS_ORDER.map((s) => ({
+        status: s,
+        label: STATUS_LABELS[s],
+        tasks: data.data.filter((t) => t.status === s),
+      })).filter((s) => s.tasks.length > 0)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -117,7 +135,34 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         />
       )}
 
-      {!isLoading && data && data.data.length > 0 && (
+      {!isLoading && data && data.data.length > 0 && sections && (
+        <>
+          {sections.map((section) => (
+            <div key={section.status} className="space-y-2">
+              <div className="flex items-center gap-2 pt-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">{section.label}</h3>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                  {section.tasks.length}
+                </span>
+              </div>
+              <DataTable
+                columns={columns}
+                data={section.tasks}
+                onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.key}`)}
+                keyExtractor={(t) => t.task_id}
+              />
+            </div>
+          ))}
+          <Pagination
+            nextCursor={data.next_cursor}
+            onLoadMore={() => {
+              if (data.next_cursor) setCursor(data.next_cursor);
+            }}
+          />
+        </>
+      )}
+
+      {!isLoading && data && data.data.length > 0 && !sections && (
         <>
           <DataTable
             columns={columns}

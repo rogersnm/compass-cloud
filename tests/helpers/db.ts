@@ -31,6 +31,7 @@ export async function teardownTestDB() {
 }
 
 const TABLES_IN_DELETE_ORDER = [
+  schema.taskPositions,
   schema.taskDependencies,
   schema.tasks,
   schema.documents,

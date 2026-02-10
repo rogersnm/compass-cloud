@@ -52,6 +52,7 @@ export interface Task {
   created_by: string;
   created_at: string;
   deleted_at: string | null;
+  position: number;
 }
 
 export interface Document {

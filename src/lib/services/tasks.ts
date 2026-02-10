@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { tasks, projects, taskDependencies, users } from "@/lib/db/schema";
-import { eq, and, isNull, sql, desc } from "drizzle-orm";
+import { tasks, projects, taskDependencies, taskPositions, users } from "@/lib/db/schema";
+import { eq, and, isNull, sql, desc, asc, max } from "drizzle-orm";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { newTaskId } from "@/lib/id/generate";
 import { validateDAG } from "@/lib/dag/validate";
@@ -90,7 +90,7 @@ export async function createTask(params: {
     if (attempts > 10) throw new Error("Could not generate unique display ID");
   }
 
-  await db
+  const [inserted] = await db
     .insert(tasks)
     .values({
       organization_id: params.orgId,
@@ -103,7 +103,26 @@ export async function createTask(params: {
       epic_key: params.epicKey || null,
       body: params.body || "",
       created_by_user_id: params.userId,
+    })
+    .returning();
+
+  if (type === "task") {
+    // Get max position for tasks in this project
+    const [{ maxPos }] = await db
+      .select({ maxPos: max(taskPositions.position) })
+      .from(taskPositions)
+      .innerJoin(tasks, and(
+        eq(tasks.task_id, taskPositions.task_id),
+        eq(tasks.project_id, project.project_id),
+        eq(tasks.is_current, true),
+        isNull(tasks.deleted_at),
+      ));
+
+    await db.insert(taskPositions).values({
+      task_id: inserted.task_id,
+      position: (maxPos ?? 0) + 1000,
     });
+  }
 
   return getTaskByDisplayId(displayId, params.orgId);
 }
@@ -151,14 +170,16 @@ export async function listTasks(
     .select({
       task: tasks,
       created_by: users.name,
+      position: taskPositions.position,
     })
     .from(tasks)
     .innerJoin(users, eq(users.user_id, tasks.created_by_user_id))
+    .leftJoin(taskPositions, eq(taskPositions.task_id, tasks.task_id))
     .where(and(...conditions))
-    .orderBy(desc(tasks.created_at), desc(tasks.task_id))
+    .orderBy(asc(taskPositions.position), desc(tasks.created_at), desc(tasks.task_id))
     .limit(queryLimit);
 
-  const merged = rows.map((r) => ({ ...r.task, created_by: r.created_by }));
+  const merged = rows.map((r) => ({ ...r.task, created_by: r.created_by, position: r.position ?? 0 }));
   const hasNext = merged.length > limit;
   const data = hasNext ? merged.slice(0, limit) : merged;
 
@@ -314,6 +335,23 @@ export async function deleteTask(
     created_by_user_id: userId,
     deleted_at: new Date(),
   });
+
+  // Remove position row
+  await db.delete(taskPositions).where(eq(taskPositions.task_id, current.task_id));
+}
+
+export async function reorderTask(displayId: string, position: number, orgId: string) {
+  const task = await getTaskByDisplayId(displayId, orgId);
+  if (task.type !== "task") {
+    throw new ValidationError("Only tasks can be reordered");
+  }
+  await db
+    .insert(taskPositions)
+    .values({ task_id: task.task_id, position })
+    .onConflictDoUpdate({
+      target: taskPositions.task_id,
+      set: { position },
+    });
 }
 
 export async function updateTaskDependencies(
