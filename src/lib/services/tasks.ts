@@ -159,17 +159,20 @@ export async function listTasks(
     conditions.push(eq(tasks.epic_key, filters.epicId));
   }
 
+  const statusWeightExpr = sql`CASE ${tasks.status} WHEN 'in_progress' THEN 1 WHEN 'open' THEN 2 WHEN 'closed' THEN 3 ELSE 4 END`;
   const posExpr = sql`COALESCE(${taskPositions.position}, 2147483647)`;
 
   if (filters.cursor) {
     const c = decodeCursor(filters.cursor);
     const cursorPos = c.position ?? 2147483647;
-    // Mixed-direction cursor: position ASC, created_at DESC, task_id DESC
+    const cursorSw = c.statusWeight ?? 4;
+    // Mixed-direction cursor: statusWeight ASC, position ASC, created_at DESC, task_id DESC
     conditions.push(
       sql`(
-        ${posExpr} > ${cursorPos}
-        OR (${posExpr} = ${cursorPos} AND ${tasks.created_at} < ${c.createdAt})
-        OR (${posExpr} = ${cursorPos} AND ${tasks.created_at} = ${c.createdAt} AND ${tasks.task_id} < ${c.id})
+        ${statusWeightExpr} > ${cursorSw}
+        OR (${statusWeightExpr} = ${cursorSw} AND ${posExpr} > ${cursorPos})
+        OR (${statusWeightExpr} = ${cursorSw} AND ${posExpr} = ${cursorPos} AND ${tasks.created_at} < ${c.createdAt})
+        OR (${statusWeightExpr} = ${cursorSw} AND ${posExpr} = ${cursorPos} AND ${tasks.created_at} = ${c.createdAt} AND ${tasks.task_id} < ${c.id})
       )`
     );
   }
@@ -184,9 +187,10 @@ export async function listTasks(
     .innerJoin(users, eq(users.user_id, tasks.created_by_user_id))
     .leftJoin(taskPositions, eq(taskPositions.task_id, tasks.task_id))
     .where(and(...conditions))
-    .orderBy(asc(taskPositions.position), desc(tasks.created_at), desc(tasks.task_id))
+    .orderBy(statusWeightExpr, asc(taskPositions.position), desc(tasks.created_at), desc(tasks.task_id))
     .limit(queryLimit);
 
+  const statusWeights: Record<string, number> = { in_progress: 1, open: 2, closed: 3 };
   const merged = rows.map((r) => ({ ...r.task, created_by: r.created_by, position: r.position ?? 0 }));
   const hasNext = merged.length > limit;
   const data = hasNext ? merged.slice(0, limit) : merged;
@@ -198,6 +202,7 @@ export async function listTasks(
       createdAt: last.created_at.toISOString(),
       id: last.task_id,
       position: last.position,
+      statusWeight: (last.status ? statusWeights[last.status] : undefined) ?? 4,
     });
   }
 

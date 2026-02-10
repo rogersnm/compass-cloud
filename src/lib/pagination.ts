@@ -2,6 +2,7 @@ export interface CursorData {
   createdAt: string;
   id: string;
   position?: number;
+  statusWeight?: number;
 }
 
 export function encodeCursor(data: CursorData): string {
