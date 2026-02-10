@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LandingNavButtons } from "./landing-nav-buttons";
 import {
   Card,
   CardDescription,
@@ -47,12 +46,7 @@ export default function LandingPage() {
       <nav className="flex items-center justify-between border-b border-border/60 px-6 py-4 shadow-[0_1px_3px_0_rgba(37,99,235,0.04)]">
         <span className="text-lg font-bold tracking-tight">Compass</span>
         <div className="flex gap-2">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">Get Started</Link>
-          </Button>
+          <LandingNavButtons />
         </div>
       </nav>
 
@@ -71,12 +65,7 @@ export default function LandingPage() {
           </p>
         </div>
         <div className="relative flex gap-3">
-          <Button size="lg" asChild>
-            <Link href="/register">Get Started</Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
+          <LandingNavButtons size="lg" signInVariant="outline" />
         </div>
       </section>
 
