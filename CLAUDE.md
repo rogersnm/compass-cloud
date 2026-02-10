@@ -31,6 +31,9 @@ npx vitest run tests/integration/tasks.test.ts
 # Watch mode
 npm run test:watch
 
+# Deploy
+npm run deploy:aws                               # Deploy to AWS ECS
+
 # Database
 npm run db:migrate    # Run migrations
 npm run db:generate   # Generate migrations from schema changes
