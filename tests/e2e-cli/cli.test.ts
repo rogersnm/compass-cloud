@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { readFile, writeFile } from "node:fs/promises";
 import { bootstrapCLI } from "./helpers";
 
 describe("compass CLI e2e", () => {
   let compass: (...args: string[]) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
   let cleanup: () => Promise<void>;
+  let dataDir: string;
 
   // Epic keys
   let authEpic: string;
   let dbEpic: string;
+  let infraEpic: string;
 
   // Auth epic tasks: login -> session -> oauth (linear chain)
   let loginTask: string;
@@ -26,6 +29,7 @@ describe("compass CLI e2e", () => {
     const ctx = await bootstrapCLI();
     compass = ctx.compass;
     cleanup = ctx.cleanup;
+    dataDir = ctx.dataDir;
   });
 
   afterAll(async () => {
@@ -44,6 +48,12 @@ describe("compass CLI e2e", () => {
     const r = await compass("project", "create", "E2E Test", "--key", "E2E");
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toMatch(/E2E/);
+  });
+
+  it("project show includes created_by", async () => {
+    const r = await compass("project", "show", "E2E");
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/created_by: E2E User/);
   });
 
   it("project list shows new project", async () => {
@@ -67,18 +77,72 @@ describe("compass CLI e2e", () => {
     expect(dbEpic).not.toBe(authEpic);
   });
 
+  // ── Sub-epic under auth epic ──
+
+  it("create sub-epic under auth epic", async () => {
+    const r = await compass("task", "create", "OAuth Infra", "--project", "E2E", "--type", "epic", "--parent-epic", authEpic);
+    expect(r.exitCode).toBe(0);
+    infraEpic = extractKey(r.stdout);
+  });
+
+  it("task show sub-epic displays parent epic", async () => {
+    const r = await compass("task", "show", infraEpic);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain(authEpic);
+  });
+
+  it("task list --parent-epic shows sub-epic and tasks", async () => {
+    const r = await compass("task", "list", "--project", "E2E", "--parent-epic", authEpic);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain("OAuth Infra");
+  });
+
+  it("create task under sub-epic", async () => {
+    const r = await compass("task", "create", "Token Rotation", "--project", "E2E", "--parent-epic", infraEpic);
+    expect(r.exitCode).toBe(0);
+  });
+
+  it("task show sub-epic lists child task", async () => {
+    const r = await compass("task", "show", infraEpic, "--pretty");
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain("Token Rotation");
+  });
+
   // ── Auth epic: linear chain ──
 
   it("create login task under auth epic", async () => {
-    const r = await compass("task", "create", "Build login page", "--project", "E2E", "--epic", authEpic);
+    const r = await compass("task", "create", "Build login page", "--project", "E2E", "--parent-epic", authEpic);
     expect(r.exitCode).toBe(0);
     loginTask = extractKey(r.stdout);
+  });
+
+  // ── Task download/upload ──
+
+  it("task download writes file to .compass/", async () => {
+    const r = await compass("task", "download", loginTask);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toContain(`${loginTask}.md`);
+    const content = await readFile(`${dataDir}/.compass/${loginTask}.md`, "utf-8");
+    expect(content).toContain("Build login page");
+    expect(content).toMatch(/created_by: E2E User/);
+  });
+
+  it("task upload sends edits back and removes local file", async () => {
+    const filePath = `${dataDir}/.compass/${loginTask}.md`;
+    const content = await readFile(filePath, "utf-8");
+    await writeFile(filePath, content.replace("Build login page", "Build login page (updated)"));
+    const r = await compass("task", "upload", loginTask);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain("Uploaded task");
+    // Verify the update took effect
+    const show = await compass("task", "show", loginTask);
+    expect(show.stdout).toContain("Build login page (updated)");
   });
 
   it("create session task depending on login", async () => {
     const r = await compass(
       "task", "create", "Session management",
-      "--project", "E2E", "--epic", authEpic, "--depends-on", loginTask
+      "--project", "E2E", "--parent-epic", authEpic, "--depends-on", loginTask
     );
     expect(r.exitCode).toBe(0);
     sessionTask = extractKey(r.stdout);
@@ -87,7 +151,7 @@ describe("compass CLI e2e", () => {
   it("create oauth task depending on session", async () => {
     const r = await compass(
       "task", "create", "OAuth2 provider",
-      "--project", "E2E", "--epic", authEpic, "--depends-on", sessionTask
+      "--project", "E2E", "--parent-epic", authEpic, "--depends-on", sessionTask
     );
     expect(r.exitCode).toBe(0);
     oauthTask = extractKey(r.stdout);
@@ -96,7 +160,7 @@ describe("compass CLI e2e", () => {
   // ── DB epic: fan-out (schema -> migrations, schema -> seed) ──
 
   it("create schema task under db epic", async () => {
-    const r = await compass("task", "create", "Design schema", "--project", "E2E", "--epic", dbEpic);
+    const r = await compass("task", "create", "Design schema", "--project", "E2E", "--parent-epic", dbEpic);
     expect(r.exitCode).toBe(0);
     schemaTask = extractKey(r.stdout);
   });
@@ -104,7 +168,7 @@ describe("compass CLI e2e", () => {
   it("create migrations task depending on schema", async () => {
     const r = await compass(
       "task", "create", "Write migrations",
-      "--project", "E2E", "--epic", dbEpic, "--depends-on", schemaTask
+      "--project", "E2E", "--parent-epic", dbEpic, "--depends-on", schemaTask
     );
     expect(r.exitCode).toBe(0);
     migrationsTask = extractKey(r.stdout);
@@ -113,7 +177,7 @@ describe("compass CLI e2e", () => {
   it("create seed task depending on schema", async () => {
     const r = await compass(
       "task", "create", "Seed data",
-      "--project", "E2E", "--epic", dbEpic, "--depends-on", schemaTask
+      "--project", "E2E", "--parent-epic", dbEpic, "--depends-on", schemaTask
     );
     expect(r.exitCode).toBe(0);
     seedTask = extractKey(r.stdout);
@@ -133,7 +197,7 @@ describe("compass CLI e2e", () => {
   // ── Epic membership ──
 
   it("task list --epic filters to auth epic only", async () => {
-    const r = await compass("task", "list", "--project", "E2E", "--epic", authEpic);
+    const r = await compass("task", "list", "--project", "E2E", "--parent-epic", authEpic);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("Build login page");
     expect(r.stdout).toContain("Session management");
@@ -144,7 +208,7 @@ describe("compass CLI e2e", () => {
   });
 
   it("task list --epic filters to db epic only", async () => {
-    const r = await compass("task", "list", "--project", "E2E", "--epic", dbEpic);
+    const r = await compass("task", "list", "--project", "E2E", "--parent-epic", dbEpic);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("Design schema");
     expect(r.stdout).toContain("Write migrations");
@@ -159,6 +223,7 @@ describe("compass CLI e2e", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("Auth Epic");
     expect(r.stdout).toContain("DB Epic");
+    expect(r.stdout).toContain("OAuth Infra");
     expect(r.stdout).not.toContain("Build login page");
     expect(r.stdout).not.toContain("Design schema");
   });
@@ -168,6 +233,12 @@ describe("compass CLI e2e", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain(authEpic);
     expect(r.stdout).toMatch(/project: E2E/);
+  });
+
+  it("task show includes created_by", async () => {
+    const r = await compass("task", "show", loginTask);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/created_by: E2E User/);
   });
 
   // ── Dependency graph ──

@@ -19,6 +19,16 @@ interface CLIContext {
   compass: (...args: string[]) => Promise<CLIResult>;
 }
 
+interface MultistoreCLIContext extends CLIContext {
+  apiKey: string;
+}
+
+interface TestOrgResult {
+  accessToken: string;
+  orgSlug: string;
+  apiKey: string;
+}
+
 let compassBin: string | undefined;
 
 /** Build the compass CLI once per test run, return path to the binary. */
@@ -57,6 +67,7 @@ function runCompass(bin: string, dataDir: string, ...args: string[]): Promise<CL
       bin,
       ["--data-dir", dataDir, ...args],
       {
+        cwd: dataDir,
         env: { ...process.env, COMPASS_API_BASE: API_BASE },
         timeout: 15000,
       },
@@ -71,15 +82,7 @@ function runCompass(bin: string, dataDir: string, ...args: string[]): Promise<CL
   });
 }
 
-export async function bootstrapCLI(): Promise<CLIContext> {
-  const id = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const dataDir = await mkdtemp(join(tmpdir(), "compass-e2e-"));
-  await mkdir(dataDir, { recursive: true });
-
-  // Build CLI binary into temp dir
-  const bin = buildCompass(dataDir);
-
-  // 1. Register
+async function createTestOrgAndKey(id: string): Promise<TestOrgResult> {
   const regResult = await apiPost("/auth/register", {
     name: `E2E User ${id}`,
     email: `${id}@test.local`,
@@ -87,7 +90,6 @@ export async function bootstrapCLI(): Promise<CLIContext> {
   });
   const accessToken = (regResult.data as { data: { access_token: string } }).data.access_token;
 
-  // 2. Create org
   const orgSlug = `e2e-${id}`;
   await apiPost(
     "/orgs",
@@ -95,7 +97,6 @@ export async function bootstrapCLI(): Promise<CLIContext> {
     { Authorization: `Bearer ${accessToken}` }
   );
 
-  // 3. Create API key
   const keyResult = await apiPost(
     "/auth/keys",
     { name: "e2e-test-key" },
@@ -103,17 +104,53 @@ export async function bootstrapCLI(): Promise<CLIContext> {
   );
   const apiKey = (keyResult.data as { data: { key: string } }).data.key;
 
-  // 4. Write config.yaml to temp dir
+  return { accessToken, orgSlug, apiKey };
+}
+
+export async function bootstrapCLI(): Promise<CLIContext> {
+  const id = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const dataDir = await mkdtemp(join(tmpdir(), "compass-e2e-"));
+  await mkdir(dataDir, { recursive: true });
+
+  const bin = buildCompass(dataDir);
+  const { orgSlug, apiKey } = await createTestOrgAndKey(id);
+
   await writeFile(
     join(dataDir, "config.yaml"),
-    `cloud:\n    api_key: ${apiKey}\n`
+    [
+      "version: 2",
+      "default_store: localhost:3000",
+      "stores:",
+      "  localhost:3000:",
+      `    api_key: ${apiKey}`,
+      "    protocol: http",
+      "",
+    ].join("\n")
   );
 
   const compass = (...args: string[]) => runCompass(bin, dataDir, ...args);
-
   const cleanup = async () => {
     await rm(dataDir, { recursive: true, force: true });
   };
 
   return { dataDir, orgSlug, cleanup, compass };
+}
+
+export async function bootstrapMultistoreCLI(): Promise<MultistoreCLIContext> {
+  const id = `ms-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const dataDir = await mkdtemp(join(tmpdir(), "compass-ms-"));
+  await mkdir(dataDir, { recursive: true });
+
+  const bin = buildCompass(dataDir);
+  const { orgSlug, apiKey } = await createTestOrgAndKey(id);
+
+  // Minimal v2 config; store setup done via CLI commands in tests
+  await writeFile(join(dataDir, "config.yaml"), "version: 2\n");
+
+  const compass = (...args: string[]) => runCompass(bin, dataDir, ...args);
+  const cleanup = async () => {
+    await rm(dataDir, { recursive: true, force: true });
+  };
+
+  return { dataDir, orgSlug, apiKey, cleanup, compass };
 }
