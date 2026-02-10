@@ -200,7 +200,16 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
     const newPosition = calcPosition(targetColumn, dropIndex, activeKey);
     const statusChanged = targetStatus !== task.status;
 
-    // Clear local overrides
+    // Optimistically update the cache so the card stays where it was dropped
+    queryClient.setQueryData<Task[]>(["kanban-tasks", projectKey], (old) =>
+      (old ?? []).map((t) =>
+        t.key === activeKey
+          ? { ...t, status: targetStatus, position: newPosition }
+          : t
+      )
+    );
+
+    // Clear local overrides now that the cache reflects the new state
     setLocalStatusOverride(new Map());
 
     try {
@@ -208,9 +217,9 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
         await api.patch(`/tasks/${activeKey}`, { status: targetStatus });
       }
       await api.patch(`/tasks/${activeKey}/reorder`, { position: newPosition });
-      queryClient.invalidateQueries({ queryKey: ["kanban-tasks", projectKey] });
     } catch {
       toast.error("Failed to update task position");
+    } finally {
       queryClient.invalidateQueries({ queryKey: ["kanban-tasks", projectKey] });
     }
   }, [tasks, columns, localStatusOverride, projectKey, queryClient]);
