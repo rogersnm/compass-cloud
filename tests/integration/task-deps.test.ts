@@ -16,7 +16,6 @@ import {
 describe("task dependencies", () => {
   let orgId: string;
   let userId: string;
-  let projectId: string;
   let projectKey: string;
 
   beforeAll(async () => {
@@ -45,7 +44,6 @@ describe("task dependencies", () => {
       orgId,
       userId,
     });
-    projectId = project.project_id;
     projectKey = project.key;
   });
 

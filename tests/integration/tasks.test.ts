@@ -110,11 +110,65 @@ describe("task CRUD", () => {
     ).rejects.toThrow("Epics cannot have a status");
   });
 
-  it("rejects epic with parent epic", async () => {
-    const parentEpic = await createTask({
+  it("creates sub-epic under parent epic", async () => {
+    const parent = await createTask({
       projectKey,
-      title: "Parent",
+      title: "Parent Epic",
       type: "epic",
+      orgId,
+      userId,
+    });
+
+    const child = await createTask({
+      projectKey,
+      title: "Child Epic",
+      type: "epic",
+      epicKey: parent.key,
+      orgId,
+      userId,
+    });
+
+    expect(child.type).toBe("epic");
+    expect(child.epic_key).toBe(parent.key);
+  });
+
+  it("lists sub-epics and tasks under parent epic", async () => {
+    const parent = await createTask({
+      projectKey,
+      title: "Parent Epic",
+      type: "epic",
+      orgId,
+      userId,
+    });
+
+    const childEpic = await createTask({
+      projectKey,
+      title: "Child Epic",
+      type: "epic",
+      epicKey: parent.key,
+      orgId,
+      userId,
+    });
+
+    const childTask = await createTask({
+      projectKey,
+      title: "Child Task",
+      epicKey: parent.key,
+      orgId,
+      userId,
+    });
+
+    const result = await listTasks(projectId, orgId, { epicId: parent.key });
+    expect(result.data).toHaveLength(2);
+    const keys = result.data.map((t) => t.key);
+    expect(keys).toContain(childEpic.key);
+    expect(keys).toContain(childTask.key);
+  });
+
+  it("rejects epic_key referencing a task (when creating epic)", async () => {
+    const task = await createTask({
+      projectKey,
+      title: "A Task",
       orgId,
       userId,
     });
@@ -122,13 +176,60 @@ describe("task CRUD", () => {
     await expect(
       createTask({
         projectKey,
-        title: "Child Epic",
+        title: "Bad Epic",
         type: "epic",
-        epicKey: parentEpic.key,
+        epicKey: task.key,
         orgId,
         userId,
       })
-    ).rejects.toThrow("Epics cannot have a parent epic");
+    ).rejects.toThrow("Parent must be an epic");
+  });
+
+  it("rejects epic_key referencing a task (when creating task)", async () => {
+    const task = await createTask({
+      projectKey,
+      title: "A Task",
+      orgId,
+      userId,
+    });
+
+    await expect(
+      createTask({
+        projectKey,
+        title: "Bad Task",
+        epicKey: task.key,
+        orgId,
+        userId,
+      })
+    ).rejects.toThrow("Parent must be an epic");
+  });
+
+  it("enforces max epic nesting depth", async () => {
+    const epics: string[] = [];
+    for (let i = 0; i < 11; i++) {
+      const parentKey = i === 0 ? undefined : epics[i - 1];
+      const epic = await createTask({
+        projectKey,
+        title: `Epic Level ${i}`,
+        type: "epic",
+        epicKey: parentKey,
+        orgId,
+        userId,
+      });
+      epics.push(epic.key);
+    }
+
+    // 11 levels deep (0 through 10) means the 11th has a parent chain of 11, exceeding MAX_EPIC_DEPTH=10
+    await expect(
+      createTask({
+        projectKey,
+        title: "Too Deep",
+        type: "epic",
+        epicKey: epics[epics.length - 1],
+        orgId,
+        userId,
+      })
+    ).rejects.toThrow("Epic nesting exceeds maximum depth of 10");
   });
 
   it("creates task under epic", async () => {
