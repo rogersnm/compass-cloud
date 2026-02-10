@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Pagination } from "@/components/shared/pagination";
@@ -80,31 +80,41 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
   const router = useRouter();
   const [status, setStatus] = useState("all");
   const [type, setType] = useState("all");
-  const [cursor, setCursor] = useState<string | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
-  const params = new URLSearchParams();
-  params.set("limit", "50");
-  if (status !== "all") params.set("status", status);
-  if (type !== "all") params.set("type", type);
-  if (cursor) params.set("cursor", cursor);
+  const buildParams = (cursor?: string) => {
+    const params = new URLSearchParams();
+    params.set("limit", "50");
+    if (status !== "all") params.set("status", status);
+    if (type !== "all") params.set("type", type);
+    if (cursor) params.set("cursor", cursor);
+    return params.toString();
+  };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["tasks", projectKey, status, type, cursor],
-    queryFn: () =>
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["tasks", projectKey, status, type],
+    queryFn: ({ pageParam }) =>
       api.get<PaginatedResponse<Task>>(
-        `/projects/${projectKey}/tasks?${params.toString()}`
+        `/projects/${projectKey}/tasks?${buildParams(pageParam)}`
       ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   });
 
+  const allTasks = data?.pages.flatMap((p) => p.data) ?? [];
   const hasFilter = status !== "all";
 
-  // Group tasks by status for sectioned view
-  const sections = !hasFilter && data
+  const sections = !hasFilter && allTasks.length > 0
     ? STATUS_ORDER.map((s) => ({
         status: s,
         label: STATUS_LABELS[s],
-        tasks: data.data.filter((t) => t.status === s),
+        tasks: allTasks.filter((t) => t.status === s),
       })).filter((s) => s.tasks.length > 0)
     : null;
 
@@ -114,8 +124,8 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         <TaskFilters
           status={status}
           type={type}
-          onStatusChange={(v) => { setStatus(v); setCursor(undefined); }}
-          onTypeChange={(v) => { setType(v); setCursor(undefined); }}
+          onStatusChange={(v) => { setStatus(v); }}
+          onTypeChange={(v) => { setType(v); }}
         />
         <Button onClick={() => setFormOpen(true)} size="sm">
           New Task
@@ -124,7 +134,7 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
 
       {isLoading && <TableSkeleton rows={5} cols={5} />}
 
-      {!isLoading && data && data.data.length === 0 && (
+      {!isLoading && allTasks.length === 0 && (
         <EmptyState
           icon={<ListChecks className="h-10 w-10" />}
           title="No tasks found"
@@ -135,7 +145,7 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         />
       )}
 
-      {!isLoading && data && data.data.length > 0 && sections && (
+      {!isLoading && allTasks.length > 0 && sections && (
         <>
           {sections.map((section) => (
             <div key={section.status} className="space-y-2">
@@ -154,27 +164,25 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
             </div>
           ))}
           <Pagination
-            nextCursor={data.next_cursor}
-            onLoadMore={() => {
-              if (data.next_cursor) setCursor(data.next_cursor);
-            }}
+            nextCursor={hasNextPage ? "has-more" : null}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         </>
       )}
 
-      {!isLoading && data && data.data.length > 0 && !sections && (
+      {!isLoading && allTasks.length > 0 && !sections && (
         <>
           <DataTable
             columns={columns}
-            data={data.data}
+            data={allTasks}
             onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.key}`)}
             keyExtractor={(t) => t.task_id}
           />
           <Pagination
-            nextCursor={data.next_cursor}
-            onLoadMore={() => {
-              if (data.next_cursor) setCursor(data.next_cursor);
-            }}
+            nextCursor={hasNextPage ? "has-more" : null}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         </>
       )}

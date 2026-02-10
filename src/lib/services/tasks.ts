@@ -159,10 +159,18 @@ export async function listTasks(
     conditions.push(eq(tasks.epic_key, filters.epicId));
   }
 
+  const posExpr = sql`COALESCE(${taskPositions.position}, 2147483647)`;
+
   if (filters.cursor) {
     const c = decodeCursor(filters.cursor);
+    const cursorPos = c.position ?? 2147483647;
+    // Mixed-direction cursor: position ASC, created_at DESC, task_id DESC
     conditions.push(
-      sql`(${tasks.created_at}, ${tasks.task_id}) < (${c.createdAt}, ${c.id})`
+      sql`(
+        ${posExpr} > ${cursorPos}
+        OR (${posExpr} = ${cursorPos} AND ${tasks.created_at} < ${c.createdAt})
+        OR (${posExpr} = ${cursorPos} AND ${tasks.created_at} = ${c.createdAt} AND ${tasks.task_id} < ${c.id})
+      )`
     );
   }
 
@@ -189,6 +197,7 @@ export async function listTasks(
     nextCursor = encodeCursor({
       createdAt: last.created_at.toISOString(),
       id: last.task_id,
+      position: last.position,
     });
   }
 
