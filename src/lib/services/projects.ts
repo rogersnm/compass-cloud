@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { projects, tasks, documents } from "@/lib/db/schema";
+import { projects, tasks, documents, users } from "@/lib/db/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError } from "@/lib/errors";
 import { generateKey, validateKey } from "@/lib/id/generate";
@@ -24,7 +24,7 @@ export async function createProject(params: {
   // Check uniqueness, retry with digit suffix on collision
   key = await resolveKeyCollision(key, params.orgId);
 
-  const [project] = await db
+  await db
     .insert(projects)
     .values({
       organization_id: params.orgId,
@@ -32,10 +32,9 @@ export async function createProject(params: {
       name: params.name,
       body: params.body || "",
       created_by_user_id: params.userId,
-    })
-    .returning();
+    });
 
-  return project;
+  return getProjectByKey(key, params.orgId);
 }
 
 async function resolveKeyCollision(
@@ -86,39 +85,33 @@ export async function listProjects(
 ) {
   const queryLimit = limit + 1; // extra row to check has_next
 
-  let query = db
-    .select()
-    .from(projects)
-    .where(
-      and(
-        eq(projects.organization_id, orgId),
-        eq(projects.is_current, true),
-        isNull(projects.deleted_at)
-      )
-    )
-    .orderBy(desc(projects.created_at), desc(projects.project_id))
-    .limit(queryLimit);
+  const conditions = [
+    eq(projects.organization_id, orgId),
+    eq(projects.is_current, true),
+    isNull(projects.deleted_at),
+  ];
 
   if (cursor) {
     const c = decodeCursor(cursor);
-    query = db
-      .select()
-      .from(projects)
-      .where(
-        and(
-          eq(projects.organization_id, orgId),
-          eq(projects.is_current, true),
-          isNull(projects.deleted_at),
-          sql`(${projects.created_at}, ${projects.project_id}) < (${c.createdAt}, ${c.id})`
-        )
-      )
-      .orderBy(desc(projects.created_at), desc(projects.project_id))
-      .limit(queryLimit);
+    conditions.push(
+      sql`(${projects.created_at}, ${projects.project_id}) < (${c.createdAt}, ${c.id})`
+    );
   }
 
-  const rows = await query;
-  const hasNext = rows.length > limit;
-  const data = hasNext ? rows.slice(0, limit) : rows;
+  const rows = await db
+    .select({
+      project: projects,
+      created_by: users.name,
+    })
+    .from(projects)
+    .innerJoin(users, eq(users.user_id, projects.created_by_user_id))
+    .where(and(...conditions))
+    .orderBy(desc(projects.created_at), desc(projects.project_id))
+    .limit(queryLimit);
+
+  const merged = rows.map((r) => ({ ...r.project, created_by: r.created_by }));
+  const hasNext = merged.length > limit;
+  const data = hasNext ? merged.slice(0, limit) : merged;
 
   let nextCursor: string | null = null;
   if (hasNext && data.length > 0) {
@@ -133,9 +126,13 @@ export async function listProjects(
 }
 
 export async function getProjectByKey(key: string, orgId: string) {
-  const [project] = await db
-    .select()
+  const [row] = await db
+    .select({
+      project: projects,
+      created_by: users.name,
+    })
     .from(projects)
+    .innerJoin(users, eq(users.user_id, projects.created_by_user_id))
     .where(
       and(
         eq(projects.organization_id, orgId),
@@ -146,11 +143,11 @@ export async function getProjectByKey(key: string, orgId: string) {
     )
     .limit(1);
 
-  if (!project) {
+  if (!row) {
     throw new NotFoundError("Project not found");
   }
 
-  return project;
+  return { ...row.project, created_by: row.created_by };
 }
 
 export async function updateProject(
@@ -173,7 +170,7 @@ export async function updateProject(
     );
 
   // Insert new version
-  const [updated] = await db
+  await db
     .insert(projects)
     .values({
       project_id: current.project_id,
@@ -184,10 +181,9 @@ export async function updateProject(
       body: updates.body ?? current.body,
       is_current: true,
       created_by_user_id: userId,
-    })
-    .returning();
+    });
 
-  return updated;
+  return getProjectByKey(current.key, orgId);
 }
 
 export async function getProjectVersions(key: string, orgId: string) {
@@ -207,13 +203,17 @@ export async function getProjectVersions(key: string, orgId: string) {
     throw new NotFoundError("Project not found");
   }
 
-  const versions = await db
-    .select()
+  const rows = await db
+    .select({
+      project: projects,
+      created_by: users.name,
+    })
     .from(projects)
+    .innerJoin(users, eq(users.user_id, projects.created_by_user_id))
     .where(eq(projects.project_id, current.project_id))
     .orderBy(desc(projects.version));
 
-  return versions;
+  return rows.map((r) => ({ ...r.project, created_by: r.created_by }));
 }
 
 export async function deleteProject(

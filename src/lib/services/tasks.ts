@@ -1,11 +1,26 @@
 import { db } from "@/lib/db";
-import { tasks, projects, taskDependencies } from "@/lib/db/schema";
+import { tasks, projects, taskDependencies, users } from "@/lib/db/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { newTaskId } from "@/lib/id/generate";
 import { validateDAG } from "@/lib/dag/validate";
 import { topologicalSort } from "@/lib/dag/topo-sort";
 import { encodeCursor, decodeCursor } from "@/lib/pagination";
+
+const MAX_EPIC_DEPTH = 10;
+
+async function validateEpicDepth(parentKey: string, orgId: string): Promise<void> {
+  let currentKey: string | null = parentKey;
+  let depth = 0;
+  while (currentKey) {
+    depth++;
+    if (depth > MAX_EPIC_DEPTH) {
+      throw new ValidationError(`Epic nesting exceeds maximum depth of ${MAX_EPIC_DEPTH}`);
+    }
+    const task = await getTaskByDisplayId(currentKey, orgId);
+    currentKey = task.epic_key;
+  }
+}
 
 export async function createTask(params: {
   projectKey: string;
@@ -21,11 +36,17 @@ export async function createTask(params: {
   const type = params.type || "task";
 
   // Validate epic constraints
-  if (type === "epic" && params.epicKey) {
-    throw new ValidationError("Epics cannot have a parent epic");
-  }
   if (type === "epic" && params.status) {
     throw new ValidationError("Epics cannot have a status");
+  }
+  if (params.epicKey) {
+    const parent = await getTaskByDisplayId(params.epicKey, params.orgId);
+    if (parent.type !== "epic") {
+      throw new ValidationError("Parent must be an epic");
+    }
+    if (type === "epic") {
+      await validateEpicDepth(params.epicKey, params.orgId);
+    }
   }
 
   // Get project to validate it exists and get project_id
@@ -69,7 +90,7 @@ export async function createTask(params: {
     if (attempts > 10) throw new Error("Could not generate unique display ID");
   }
 
-  const [task] = await db
+  await db
     .insert(tasks)
     .values({
       organization_id: params.orgId,
@@ -82,10 +103,9 @@ export async function createTask(params: {
       epic_key: params.epicKey || null,
       body: params.body || "",
       created_by_user_id: params.userId,
-    })
-    .returning();
+    });
 
-  return task;
+  return getTaskByDisplayId(displayId, params.orgId);
 }
 
 export async function listTasks(
@@ -128,14 +148,19 @@ export async function listTasks(
   }
 
   const rows = await db
-    .select()
+    .select({
+      task: tasks,
+      created_by: users.name,
+    })
     .from(tasks)
+    .innerJoin(users, eq(users.user_id, tasks.created_by_user_id))
     .where(and(...conditions))
     .orderBy(desc(tasks.created_at), desc(tasks.task_id))
     .limit(queryLimit);
 
-  const hasNext = rows.length > limit;
-  const data = hasNext ? rows.slice(0, limit) : rows;
+  const merged = rows.map((r) => ({ ...r.task, created_by: r.created_by }));
+  const hasNext = merged.length > limit;
+  const data = hasNext ? merged.slice(0, limit) : merged;
 
   let nextCursor: string | null = null;
   if (hasNext && data.length > 0) {
@@ -150,9 +175,13 @@ export async function listTasks(
 }
 
 export async function getTaskByDisplayId(displayId: string, orgId: string) {
-  const [task] = await db
-    .select()
+  const [row] = await db
+    .select({
+      task: tasks,
+      created_by: users.name,
+    })
     .from(tasks)
+    .innerJoin(users, eq(users.user_id, tasks.created_by_user_id))
     .where(
       and(
         eq(tasks.key, displayId),
@@ -163,11 +192,11 @@ export async function getTaskByDisplayId(displayId: string, orgId: string) {
     )
     .limit(1);
 
-  if (!task) {
+  if (!row) {
     throw new NotFoundError("Task not found");
   }
 
-  return task;
+  return { ...row.task, created_by: row.created_by };
 }
 
 export async function updateTask(
@@ -199,7 +228,7 @@ export async function updateTask(
     );
 
   // Insert new version
-  const [updated] = await db
+  await db
     .insert(tasks)
     .values({
       task_id: current.task_id,
@@ -215,10 +244,9 @@ export async function updateTask(
       body: updates.body ?? current.body,
       is_current: true,
       created_by_user_id: userId,
-    })
-    .returning();
+    });
 
-  return updated;
+  return getTaskByDisplayId(current.key, orgId);
 }
 
 export async function getTaskVersions(displayId: string, orgId: string) {
@@ -238,13 +266,17 @@ export async function getTaskVersions(displayId: string, orgId: string) {
     throw new NotFoundError("Task not found");
   }
 
-  const versions = await db
-    .select()
+  const rows = await db
+    .select({
+      task: tasks,
+      created_by: users.name,
+    })
     .from(tasks)
+    .innerJoin(users, eq(users.user_id, tasks.created_by_user_id))
     .where(eq(tasks.task_id, any.task_id))
     .orderBy(desc(tasks.version));
 
-  return versions;
+  return rows.map((r) => ({ ...r.task, created_by: r.created_by }));
 }
 
 export async function deleteTask(

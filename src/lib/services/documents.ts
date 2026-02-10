@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { documents, projects } from "@/lib/db/schema";
+import { documents, projects, users } from "@/lib/db/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { NotFoundError } from "@/lib/errors";
 import { newDocId } from "@/lib/id/generate";
@@ -53,7 +53,7 @@ export async function createDocument(params: {
     if (attempts > 10) throw new Error("Could not generate unique display ID");
   }
 
-  const [doc] = await db
+  await db
     .insert(documents)
     .values({
       organization_id: params.orgId,
@@ -62,10 +62,9 @@ export async function createDocument(params: {
       title: params.title,
       body: params.body || "",
       created_by_user_id: params.userId,
-    })
-    .returning();
+    });
 
-  return doc;
+  return getDocumentByDisplayId(displayId, params.orgId);
 }
 
 export async function listDocuments(
@@ -94,14 +93,19 @@ export async function listDocuments(
   }
 
   const rows = await db
-    .select()
+    .select({
+      document: documents,
+      created_by: users.name,
+    })
     .from(documents)
+    .innerJoin(users, eq(users.user_id, documents.created_by_user_id))
     .where(and(...conditions))
     .orderBy(desc(documents.created_at), desc(documents.document_id))
     .limit(queryLimit);
 
-  const hasNext = rows.length > limit;
-  const data = hasNext ? rows.slice(0, limit) : rows;
+  const merged = rows.map((r) => ({ ...r.document, created_by: r.created_by }));
+  const hasNext = merged.length > limit;
+  const data = hasNext ? merged.slice(0, limit) : merged;
 
   let nextCursor: string | null = null;
   if (hasNext && data.length > 0) {
@@ -116,9 +120,13 @@ export async function listDocuments(
 }
 
 export async function getDocumentByDisplayId(displayId: string, orgId: string) {
-  const [doc] = await db
-    .select()
+  const [row] = await db
+    .select({
+      document: documents,
+      created_by: users.name,
+    })
     .from(documents)
+    .innerJoin(users, eq(users.user_id, documents.created_by_user_id))
     .where(
       and(
         eq(documents.key, displayId),
@@ -129,11 +137,11 @@ export async function getDocumentByDisplayId(displayId: string, orgId: string) {
     )
     .limit(1);
 
-  if (!doc) {
+  if (!row) {
     throw new NotFoundError("Document not found");
   }
 
-  return doc;
+  return { ...row.document, created_by: row.created_by };
 }
 
 export async function updateDocument(
@@ -159,7 +167,7 @@ export async function updateDocument(
     );
 
   // Insert new version
-  const [updated] = await db
+  await db
     .insert(documents)
     .values({
       document_id: current.document_id,
@@ -171,10 +179,9 @@ export async function updateDocument(
       body: updates.body ?? current.body,
       is_current: true,
       created_by_user_id: userId,
-    })
-    .returning();
+    });
 
-  return updated;
+  return getDocumentByDisplayId(current.key, orgId);
 }
 
 export async function getDocumentVersions(displayId: string, orgId: string) {
@@ -194,13 +201,17 @@ export async function getDocumentVersions(displayId: string, orgId: string) {
     throw new NotFoundError("Document not found");
   }
 
-  const versions = await db
-    .select()
+  const rows = await db
+    .select({
+      document: documents,
+      created_by: users.name,
+    })
     .from(documents)
+    .innerJoin(users, eq(users.user_id, documents.created_by_user_id))
     .where(eq(documents.document_id, any.document_id))
     .orderBy(desc(documents.version));
 
-  return versions;
+  return rows.map((r) => ({ ...r.document, created_by: r.created_by }));
 }
 
 export async function deleteDocument(

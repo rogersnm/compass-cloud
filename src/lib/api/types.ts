@@ -30,6 +30,7 @@ export interface Project {
   body: string;
   is_current: boolean;
   created_by_user_id: string;
+  created_by: string;
   created_at: string;
   deleted_at: string | null;
 }
@@ -48,6 +49,7 @@ export interface Task {
   body: string;
   is_current: boolean;
   created_by_user_id: string;
+  created_by: string;
   created_at: string;
   deleted_at: string | null;
 }
@@ -62,6 +64,7 @@ export interface Document {
   body: string;
   is_current: boolean;
   created_by_user_id: string;
+  created_by: string;
   created_at: string;
   deleted_at: string | null;
 }
