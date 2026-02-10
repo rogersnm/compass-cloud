@@ -75,7 +75,7 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
   const queryClient = useQueryClient();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   // Track local overrides for optimistic UI during drag
-  const [localStatusOverride, setLocalStatusOverride] = useState<Map<string, string>>(new Map());
+  const [localStatusOverride, setLocalStatusOverride] = useState<Map<string, Task["status"]>>(new Map());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -142,9 +142,9 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
     const overTarget = over.id as string;
 
     // Determine target status
-    let targetStatus: string | undefined;
+    let targetStatus: Task["status"] | undefined;
     if (STATUSES.includes(overTarget as typeof STATUSES[number])) {
-      targetStatus = overTarget;
+      targetStatus = overTarget as Task["status"];
     } else {
       // Over a card, find its status
       const overTask = tasks.find((t) => t.key === overTarget);
@@ -178,10 +178,10 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
     }
 
     // Determine target status
-    let targetStatus: string;
+    let targetStatus: Task["status"];
     const overTarget = over.id as string;
-    if (STATUSES.includes(overTarget as typeof STATUSES[number])) {
-      targetStatus = overTarget;
+    if (STATUSES.includes(overTarget as Task["status"])) {
+      targetStatus = overTarget as Task["status"];
     } else {
       const overTask = tasks.find((t) => t.key === overTarget);
       targetStatus = localStatusOverride.get(overTarget) ?? overTask?.status ?? task.status;
