@@ -78,14 +78,17 @@ async function createAccount(
  * Must be called before navigating to a protected route.
  */
 async function injectAuth(page: Page, account: TestAccount) {
-  await page.goto("/");
-  await page.evaluate(
+  // Use addInitScript so tokens are in localStorage before any app code runs
+  await page.addInitScript(
     ({ token, slug }) => {
       localStorage.setItem("compass_access_token", token);
       localStorage.setItem("compass_org_slug", slug);
     },
     { token: account.accessToken, slug: account.orgSlug }
   );
+  // Navigate once so the script executes and auth provider picks up tokens
+  await page.goto("/");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 /**

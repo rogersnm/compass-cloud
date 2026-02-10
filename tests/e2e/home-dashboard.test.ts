@@ -43,8 +43,7 @@ test.describe("Home Dashboard", () => {
     const token: string = json.data.access_token;
 
     // Inject auth without org slug
-    await page.goto("/");
-    await page.evaluate(
+    await page.addInitScript(
       (t) => localStorage.setItem("compass_access_token", t),
       token
     );
@@ -55,7 +54,7 @@ test.describe("Home Dashboard", () => {
       timeout: 10_000,
     });
     await expect(
-      page.getByRole("button", { name: "Create Organization" })
+      page.getByRole("button", { name: "Create Organization" }).first()
     ).toBeVisible();
   });
 });
