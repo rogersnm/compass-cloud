@@ -18,4 +18,17 @@ test.describe("Screenshots", () => {
       fullPage: true,
     });
   });
+
+  test("capture splash screen dark mode", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.evaluate(() => {
+      document.documentElement.classList.add("dark");
+    });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      path: "screenshots/splash-dark.png",
+      fullPage: true,
+    });
+  });
 });

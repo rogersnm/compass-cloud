@@ -4,16 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Compass Cloud is the headless REST API backend for the Compass task/document tracker. Built with Next.js 16 (App Router), PostgreSQL, and Drizzle ORM. Deployed to AWS ECS Fargate via CDK.
+Compass Cloud is the backend and web UI for the Compass task/document tracker. Built with Next.js 16 (App Router), PostgreSQL, and Drizzle ORM. Deployed to AWS ECS Fargate via CDK.
 
 Compass project key: **CLOUD**
 
 ## Commands
 
 ```bash
-# Local dev
+# Local dev (local DB)
 docker compose -f infra/docker-compose.yml up -d   # Start PostgreSQL on port 5434
 npm run dev                                          # Next.js dev server on :3000
+
+# Local dev (prod DB) - requires bastion running (./bastion.sh)
+npm run dev:prod                                     # Dev server pointed at prod RDS
 
 # Quality gates (CI runs all four)
 npm run lint          # ESLint
