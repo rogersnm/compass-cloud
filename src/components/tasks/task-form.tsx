@@ -27,9 +27,10 @@ interface TaskFormProps {
   onOpenChange: (open: boolean) => void;
   projectKey: string;
   task?: Task;
+  epicKey?: string | null;
 }
 
-export function TaskForm({ open, onOpenChange, projectKey, task }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, projectKey, task, epicKey }: TaskFormProps) {
   const isEdit = !!task;
   const [title, setTitle] = useState(task?.title ?? "");
   const [type, setType] = useState<string>(task?.type ?? "task");
@@ -66,9 +67,12 @@ export function TaskForm({ open, onOpenChange, projectKey, task }: TaskFormProps
           status,
           priority: priorityVal,
           body: body || undefined,
+          epic_key: epicKey || undefined,
         });
       }
       await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-epics"] });
       onOpenChange(false);
       setTitle("");
       setType("task");

@@ -90,10 +90,10 @@ export function SearchCommand({
         router.push(`/${orgSlug}/projects/${result.project_key ?? result.id}`);
         break;
       case "task":
-        router.push(`/${orgSlug}/tasks/${result.key}`);
+        router.push(`/${orgSlug}/projects/${result.project_key}/tasks/${result.key}`);
         break;
       case "document":
-        router.push(`/${orgSlug}/documents/${result.key}`);
+        router.push(`/${orgSlug}/projects/${result.project_key}/documents/${result.key}`);
         break;
     }
   }

@@ -84,7 +84,7 @@ export function DocumentList({ projectKey, orgSlug }: DocumentListProps) {
             columns={columns}
             data={data.data}
             onRowClick={(d) =>
-              router.push(`/${orgSlug}/documents/${d.key}`)
+              router.push(`/${orgSlug}/projects/${projectKey}/documents/${d.key}`)
             }
             keyExtractor={(d) => d.document_id}
           />

@@ -19,9 +19,9 @@ import type { ApiError, ApiResponse, Task } from "@/lib/api/types";
 export default function TaskDetailPage({
   params,
 }: {
-  params: Promise<{ orgSlug: string; displayId: string }>;
+  params: Promise<{ orgSlug: string; key: string; displayId: string }>;
 }) {
-  const { orgSlug, displayId } = use(params);
+  const { orgSlug, key, displayId } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
@@ -52,7 +52,7 @@ export default function TaskDetailPage({
     try {
       await api.del(`/tasks/${displayId}`);
       await queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      router.back();
+      router.push(`/${orgSlug}/projects/${key}/tasks`);
     } catch (err) {
       const apiErr = err as ApiError;
       console.error(apiErr.error?.message ?? "Delete failed");
@@ -62,9 +62,6 @@ export default function TaskDetailPage({
 
   if (isLoading) return <CardSkeleton />;
   if (!task) return <p className="text-muted-foreground">Task not found.</p>;
-
-  // Determine the project key from key (format: KEY-T12345)
-  const projectKey = task.key.split("-")[0];
 
   return (
     <div className="space-y-6">
@@ -102,7 +99,7 @@ export default function TaskDetailPage({
             </Button>
           )}
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/${orgSlug}/tasks/${displayId}/history`}>
+            <Link href={`/${orgSlug}/projects/${key}/tasks/${displayId}/history`}>
               History
             </Link>
           </Button>
@@ -128,7 +125,7 @@ export default function TaskDetailPage({
         <aside className="space-y-4 text-sm">
           <div>
             <p className="font-medium text-muted-foreground">Project</p>
-            <p>{projectKey}</p>
+            <p>{key}</p>
           </div>
           <div>
             <p className="font-medium text-muted-foreground">Type</p>
@@ -148,7 +145,7 @@ export default function TaskDetailPage({
       <TaskForm
         open={editOpen}
         onOpenChange={setEditOpen}
-        projectKey={projectKey}
+        projectKey={key}
         task={task}
       />
 

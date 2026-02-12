@@ -12,9 +12,9 @@ import type { ApiResponse, Task } from "@/lib/api/types";
 export default function TaskHistoryPage({
   params,
 }: {
-  params: Promise<{ orgSlug: string; displayId: string }>;
+  params: Promise<{ orgSlug: string; key: string; displayId: string }>;
 }) {
-  const { orgSlug, displayId } = use(params);
+  const { orgSlug, key, displayId } = use(params);
 
   const { data, isLoading } = useQuery({
     queryKey: ["task-versions", displayId],
@@ -38,7 +38,7 @@ export default function TaskHistoryPage({
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/${orgSlug}/tasks/${displayId}`}>Back to Task</Link>
+          <Link href={`/${orgSlug}/projects/${key}/tasks/${displayId}`}>Back to Task</Link>
         </Button>
       </div>
 

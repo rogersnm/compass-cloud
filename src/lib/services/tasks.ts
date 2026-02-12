@@ -240,6 +240,7 @@ export async function updateTask(
     title?: string;
     status?: "open" | "in_progress" | "closed";
     priority?: number | null;
+    epic_key?: string | null;
     body?: string;
   },
   orgId: string,
@@ -250,6 +251,35 @@ export async function updateTask(
   if (current.type === "epic" && updates.status) {
     throw new ValidationError("Epics cannot have a status");
   }
+
+  // Validate epic_key changes
+  if (updates.epic_key !== undefined) {
+    if (updates.epic_key !== null) {
+      // Cannot assign to self
+      if (updates.epic_key === current.key) {
+        throw new ValidationError("Task cannot be its own parent");
+      }
+      const parent = await getTaskByDisplayId(updates.epic_key, orgId);
+      if (parent.type !== "epic") {
+        throw new ValidationError("Parent must be an epic");
+      }
+      // If current task is an epic, check for circular reference:
+      // walk the parent chain of the target epic and ensure current key isn't in it
+      if (current.type === "epic") {
+        let walkKey: string | null = updates.epic_key;
+        while (walkKey) {
+          if (walkKey === current.key) {
+            throw new ValidationError("Circular epic assignment");
+          }
+          const ancestor = await getTaskByDisplayId(walkKey, orgId);
+          walkKey = ancestor.epic_key;
+        }
+        await validateEpicDepth(updates.epic_key, orgId);
+      }
+    }
+  }
+
+  const newEpicKey = updates.epic_key !== undefined ? updates.epic_key : current.epic_key;
 
   // Mark old version as not current
   await db
@@ -275,7 +305,7 @@ export async function updateTask(
       type: current.type,
       status: current.type === "epic" ? null : (updates.status ?? current.status),
       priority: updates.priority !== undefined ? updates.priority : current.priority,
-      epic_key: current.epic_key,
+      epic_key: newEpicKey,
       body: updates.body ?? current.body,
       is_current: true,
       created_by_user_id: userId,

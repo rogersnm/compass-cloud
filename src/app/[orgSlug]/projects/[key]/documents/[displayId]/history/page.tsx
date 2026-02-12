@@ -12,9 +12,9 @@ import type { ApiResponse, Document } from "@/lib/api/types";
 export default function DocumentHistoryPage({
   params,
 }: {
-  params: Promise<{ orgSlug: string; displayId: string }>;
+  params: Promise<{ orgSlug: string; key: string; displayId: string }>;
 }) {
-  const { orgSlug, displayId } = use(params);
+  const { orgSlug, key, displayId } = use(params);
 
   const { data, isLoading } = useQuery({
     queryKey: ["document-versions", displayId],
@@ -38,7 +38,7 @@ export default function DocumentHistoryPage({
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/${orgSlug}/documents/${displayId}`}>
+          <Link href={`/${orgSlug}/projects/${key}/documents/${displayId}`}>
             Back to Document
           </Link>
         </Button>

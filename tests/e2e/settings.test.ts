@@ -32,7 +32,7 @@ test.describe("Settings page", () => {
   test("create and view API key", async ({ authedPage: page, account }) => {
     await page.goto(`/${account.orgSlug}/settings`);
 
-    await expect(page.getByText("API Keys")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "API Keys" })).toBeVisible({ timeout: 10_000 });
 
     // Click the "Create API Key" button (not the dialog heading)
     await page.getByRole("button", { name: "Create API Key" }).click();

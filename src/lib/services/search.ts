@@ -49,8 +49,23 @@ export async function search(params: {
   }
 
   const taskRows = await db
-    .select()
+    .select({
+      task_id: tasks.task_id,
+      key: tasks.key,
+      title: tasks.title,
+      body: tasks.body,
+      status: tasks.status,
+      created_at: tasks.created_at,
+      project_key: projects.key,
+    })
     .from(tasks)
+    .innerJoin(
+      projects,
+      and(
+        eq(projects.project_id, tasks.project_id),
+        eq(projects.is_current, true),
+      ),
+    )
     .where(and(...taskConditions))
     .orderBy(desc(tasks.created_at))
     .limit(limit);
@@ -67,8 +82,22 @@ export async function search(params: {
   }
 
   const docRows = await db
-    .select()
+    .select({
+      document_id: documents.document_id,
+      key: documents.key,
+      title: documents.title,
+      body: documents.body,
+      created_at: documents.created_at,
+      project_key: projects.key,
+    })
     .from(documents)
+    .innerJoin(
+      projects,
+      and(
+        eq(projects.project_id, documents.project_id),
+        eq(projects.is_current, true),
+      ),
+    )
     .where(and(...docConditions))
     .orderBy(desc(documents.created_at))
     .limit(limit);
@@ -95,6 +124,7 @@ export async function search(params: {
       title: t.title,
       body: t.body,
       status: t.status ?? undefined,
+      project_key: t.project_key,
       created_at: t.created_at,
     });
   }
@@ -106,6 +136,7 @@ export async function search(params: {
       key: d.key,
       title: d.title,
       body: d.body,
+      project_key: d.project_key,
       created_at: d.created_at,
     });
   }

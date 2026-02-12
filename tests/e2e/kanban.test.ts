@@ -90,8 +90,7 @@ test.describe("Kanban Board", () => {
     await createTask(baseURL!, account.accessToken, account.orgSlug, project.key, "WIP Task", "in_progress");
     await createTask(baseURL!, account.accessToken, account.orgSlug, project.key, "Done Task", "closed");
 
-    await page.goto(`/${account.orgSlug}/projects/${project.key}`);
-    await page.getByRole("tab", { name: "Board" }).click();
+    await page.goto(`/${account.orgSlug}/projects/${project.key}/board`);
 
     // Use heading role to target column headers specifically
     await expect(page.getByRole("heading", { name: "Open" })).toBeVisible({ timeout: 10_000 });
@@ -119,8 +118,7 @@ test.describe("Kanban Board", () => {
 
     await createTask(baseURL!, account.accessToken, account.orgSlug, project.key, "My Kanban Task");
 
-    await page.goto(`/${account.orgSlug}/projects/${project.key}`);
-    await page.getByRole("tab", { name: "Board" }).click();
+    await page.goto(`/${account.orgSlug}/projects/${project.key}/board`);
 
     await expect(page.getByText("My Kanban Task")).toBeVisible({ timeout: 10_000 });
   });
@@ -145,8 +143,7 @@ test.describe("Kanban Board", () => {
       "Drag Me"
     );
 
-    await page.goto(`/${account.orgSlug}/projects/${project.key}`);
-    await page.getByRole("tab", { name: "Board" }).click();
+    await page.goto(`/${account.orgSlug}/projects/${project.key}/board`);
 
     await expect(page.getByText("Drag Me")).toBeVisible({ timeout: 10_000 });
 
@@ -183,8 +180,7 @@ test.describe("Kanban Board", () => {
     await createTask(baseURL!, account.accessToken, account.orgSlug, project.key, "Second Task");
     const task3 = await createTask(baseURL!, account.accessToken, account.orgSlug, project.key, "Third Task");
 
-    await page.goto(`/${account.orgSlug}/projects/${project.key}`);
-    await page.getByRole("tab", { name: "Board" }).click();
+    await page.goto(`/${account.orgSlug}/projects/${project.key}/board`);
 
     await expect(page.getByText("First Task")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText("Third Task")).toBeVisible();

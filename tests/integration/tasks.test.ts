@@ -380,4 +380,106 @@ describe("task CRUD", () => {
     expect(epics.data).toHaveLength(1);
     expect(epics.data[0].type).toBe("epic");
   });
+
+  it("assigns task to epic via update", async () => {
+    const epic = await createTask({
+      projectKey,
+      title: "Target Epic",
+      type: "epic",
+      orgId,
+      userId,
+    });
+
+    const task = await createTask({
+      projectKey,
+      title: "Unassigned Task",
+      orgId,
+      userId,
+    });
+
+    expect(task.epic_key).toBeNull();
+
+    const updated = await updateTask(
+      task.key,
+      { epic_key: epic.key },
+      orgId,
+      userId
+    );
+
+    expect(updated.epic_key).toBe(epic.key);
+    expect(updated.version).toBe(2);
+  });
+
+  it("clears epic_key via update (set to null)", async () => {
+    const epic = await createTask({
+      projectKey,
+      title: "Parent Epic",
+      type: "epic",
+      orgId,
+      userId,
+    });
+
+    const task = await createTask({
+      projectKey,
+      title: "Child Task",
+      epicKey: epic.key,
+      orgId,
+      userId,
+    });
+
+    expect(task.epic_key).toBe(epic.key);
+
+    const updated = await updateTask(
+      task.key,
+      { epic_key: null },
+      orgId,
+      userId
+    );
+
+    expect(updated.epic_key).toBeNull();
+  });
+
+  it("rejects epic_key update targeting a non-epic", async () => {
+    const regularTask = await createTask({
+      projectKey,
+      title: "Not an epic",
+      orgId,
+      userId,
+    });
+
+    const task = await createTask({
+      projectKey,
+      title: "Some Task",
+      orgId,
+      userId,
+    });
+
+    await expect(
+      updateTask(task.key, { epic_key: regularTask.key }, orgId, userId)
+    ).rejects.toThrow("Parent must be an epic");
+  });
+
+  it("rejects circular epic assignment", async () => {
+    const epicA = await createTask({
+      projectKey,
+      title: "Epic A",
+      type: "epic",
+      orgId,
+      userId,
+    });
+
+    const epicB = await createTask({
+      projectKey,
+      title: "Epic B",
+      type: "epic",
+      epicKey: epicA.key,
+      orgId,
+      userId,
+    });
+
+    // Try to move A under B (circular: B is under A)
+    await expect(
+      updateTask(epicA.key, { epic_key: epicB.key }, orgId, userId)
+    ).rejects.toThrow("Circular epic assignment");
+  });
 });

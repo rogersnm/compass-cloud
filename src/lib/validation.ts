@@ -60,6 +60,7 @@ export const updateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   status: z.enum(["open", "in_progress", "closed"]).optional(),
   priority: z.number().int().min(0).max(3).nullable().optional(),
+  epic_key: z.string().nullable().optional(),
   body: z.string().optional(),
   depends_on: z.array(z.string()).optional(),
 });

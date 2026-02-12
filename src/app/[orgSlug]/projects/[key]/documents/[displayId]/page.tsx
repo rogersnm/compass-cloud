@@ -15,9 +15,9 @@ import type { ApiError, ApiResponse, Document } from "@/lib/api/types";
 export default function DocumentDetailPage({
   params,
 }: {
-  params: Promise<{ orgSlug: string; displayId: string }>;
+  params: Promise<{ orgSlug: string; key: string; displayId: string }>;
 }) {
-  const { orgSlug, displayId } = use(params);
+  const { orgSlug, key, displayId } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -68,7 +68,7 @@ export default function DocumentDetailPage({
     try {
       await api.del(`/documents/${displayId}`);
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
-      router.back();
+      router.push(`/${orgSlug}/projects/${key}/documents`);
     } catch (err) {
       const apiErr = err as ApiError;
       console.error(apiErr.error?.message ?? "Delete failed");
@@ -109,7 +109,7 @@ export default function DocumentDetailPage({
           ) : (
             <>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/${orgSlug}/documents/${displayId}/history`}>
+                <Link href={`/${orgSlug}/projects/${key}/documents/${displayId}/history`}>
                   History
                 </Link>
               </Button>
