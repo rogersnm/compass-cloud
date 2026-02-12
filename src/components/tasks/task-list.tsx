@@ -8,9 +8,11 @@ import { DataTable, type Column } from "@/components/shared/data-table";
 import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-skeleton";
-import { TaskFilters } from "./task-filters";
+import { TaskFilters, type GroupBy } from "./task-filters";
 import { StatusBadge } from "./status-badge";
 import { PriorityBadge } from "./priority-badge";
+import { StatusGroupView } from "./status-group-view";
+import { EpicGroupView } from "./epic-group-view";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ListChecks } from "lucide-react";
@@ -79,14 +81,27 @@ interface TaskListProps {
 export function TaskList({ projectKey, orgSlug }: TaskListProps) {
   const router = useRouter();
   const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
+  const [formEpicKey, setFormEpicKey] = useState<string | null>(null);
+
+  // Persist groupBy per-project in localStorage
+  const storageKey = `compass_groupby_${projectKey}`;
+  const [groupBy, setGroupBy] = useState<GroupBy>(() => {
+    if (typeof window === "undefined") return "status";
+    const stored = localStorage.getItem(storageKey);
+    if (stored === "none" || stored === "status" || stored === "epic") return stored;
+    return "status";
+  });
+
+  const handleGroupByChange = (value: GroupBy) => {
+    setGroupBy(value);
+    localStorage.setItem(storageKey, value);
+  };
 
   const buildParams = (cursor?: string) => {
     const params = new URLSearchParams();
     params.set("limit", "50");
     if (status !== "all") params.set("status", status);
-    if (type !== "all") params.set("type", type);
     if (cursor) params.set("cursor", cursor);
     return params.toString();
   };
@@ -98,13 +113,14 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["tasks", projectKey, status, type],
+    queryKey: ["tasks", projectKey, status],
     queryFn: ({ pageParam }) =>
       api.get<PaginatedResponse<Task>>(
         `/projects/${projectKey}/tasks?${buildParams(pageParam)}`
       ),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    enabled: groupBy !== "epic", // epic mode uses its own queries
   });
 
   const allTasks = data?.pages.flatMap((p) => p.data) ?? [];
@@ -118,23 +134,42 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
       })).filter((s) => s.tasks.length > 0)
     : null;
 
+  const handleAddTaskInEpic = (epicKey: string | null) => {
+    setFormEpicKey(epicKey);
+    setFormOpen(true);
+  };
+
+  const handleFormClose = (open: boolean) => {
+    setFormOpen(open);
+    if (!open) setFormEpicKey(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <TaskFilters
           status={status}
-          type={type}
-          onStatusChange={(v) => { setStatus(v); }}
-          onTypeChange={(v) => { setType(v); }}
+          groupBy={groupBy}
+          onStatusChange={setStatus}
+          onGroupByChange={handleGroupByChange}
         />
         <Button onClick={() => setFormOpen(true)} size="sm">
           New Task
         </Button>
       </div>
 
-      {isLoading && <TableSkeleton rows={5} cols={5} />}
+      {groupBy === "epic" && (
+        <EpicGroupView
+          projectKey={projectKey}
+          orgSlug={orgSlug}
+          statusFilter={status}
+          onAddTask={handleAddTaskInEpic}
+        />
+      )}
 
-      {!isLoading && allTasks.length === 0 && (
+      {groupBy !== "epic" && isLoading && <TableSkeleton rows={5} cols={5} />}
+
+      {groupBy !== "epic" && !isLoading && allTasks.length === 0 && (
         <EmptyState
           icon={<ListChecks className="h-10 w-10" />}
           title="No tasks found"
@@ -145,24 +180,25 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         />
       )}
 
-      {!isLoading && allTasks.length > 0 && sections && (
+      {groupBy === "status" && !isLoading && allTasks.length > 0 && sections && (
+        <StatusGroupView
+          sections={sections}
+          orgSlug={orgSlug}
+          projectKey={projectKey}
+          hasNextPage={!!hasNextPage}
+          onLoadMore={() => fetchNextPage()}
+          isFetchingNextPage={isFetchingNextPage}
+        />
+      )}
+
+      {groupBy === "status" && !isLoading && allTasks.length > 0 && !sections && (
         <>
-          {sections.map((section) => (
-            <div key={section.status} className="space-y-2">
-              <div className="flex items-center gap-2 pt-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">{section.label}</h3>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                  {section.tasks.length}
-                </span>
-              </div>
-              <DataTable
-                columns={columns}
-                data={section.tasks}
-                onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.key}`)}
-                keyExtractor={(t) => t.task_id}
-              />
-            </div>
-          ))}
+          <DataTable
+            columns={columns}
+            data={allTasks}
+            onRowClick={(t) => router.push(`/${orgSlug}/projects/${projectKey}/tasks/${t.key}`)}
+            keyExtractor={(t) => t.task_id}
+          />
           <Pagination
             nextCursor={hasNextPage ? "has-more" : null}
             onLoadMore={() => fetchNextPage()}
@@ -171,12 +207,12 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
         </>
       )}
 
-      {!isLoading && allTasks.length > 0 && !sections && (
+      {groupBy === "none" && !isLoading && allTasks.length > 0 && (
         <>
           <DataTable
             columns={columns}
             data={allTasks}
-            onRowClick={(t) => router.push(`/${orgSlug}/tasks/${t.key}`)}
+            onRowClick={(t) => router.push(`/${orgSlug}/projects/${projectKey}/tasks/${t.key}`)}
             keyExtractor={(t) => t.task_id}
           />
           <Pagination
@@ -189,8 +225,9 @@ export function TaskList({ projectKey, orgSlug }: TaskListProps) {
 
       <TaskForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={handleFormClose}
         projectKey={projectKey}
+        epicKey={formEpicKey}
       />
     </div>
   );

@@ -8,18 +8,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+export type GroupBy = "none" | "status" | "epic";
+
 interface TaskFiltersProps {
   status: string;
-  type: string;
+  groupBy: GroupBy;
   onStatusChange: (value: string) => void;
-  onTypeChange: (value: string) => void;
+  onGroupByChange: (value: GroupBy) => void;
 }
 
 export function TaskFilters({
   status,
-  type,
+  groupBy,
   onStatusChange,
-  onTypeChange,
+  onGroupByChange,
 }: TaskFiltersProps) {
   return (
     <div className="flex gap-2">
@@ -34,14 +36,14 @@ export function TaskFilters({
           <SelectItem value="closed">Closed</SelectItem>
         </SelectContent>
       </Select>
-      <Select value={type} onValueChange={onTypeChange}>
-        <SelectTrigger className="w-32">
-          <SelectValue placeholder="Type" />
+      <Select value={groupBy} onValueChange={(v) => onGroupByChange(v as GroupBy)}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Group by" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="task">Task</SelectItem>
-          <SelectItem value="epic">Epic</SelectItem>
+          <SelectItem value="none">No Grouping</SelectItem>
+          <SelectItem value="status">Group by Status</SelectItem>
+          <SelectItem value="epic">Group by Epic</SelectItem>
         </SelectContent>
       </Select>
     </div>

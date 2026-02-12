@@ -20,10 +20,11 @@ import {
 } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { api } from "@/lib/api/client";
+import { fetchAllPages } from "@/lib/api/fetch-all-pages";
 import { KanbanCard } from "./kanban-card";
 import { buildEpicBreadcrumb } from "@/lib/utils/epic-breadcrumb";
 import { toast } from "sonner";
-import type { PaginatedResponse, Task } from "@/lib/api/types";
+import type { Task } from "@/lib/api/types";
 
 const STATUSES = ["open", "in_progress", "closed"] as const;
 const STATUS_LABELS: Record<string, string> = {
@@ -31,21 +32,6 @@ const STATUS_LABELS: Record<string, string> = {
   in_progress: "In Progress",
   closed: "Closed",
 };
-
-async function fetchAllPages(projectKey: string, type: string): Promise<Task[]> {
-  const all: Task[] = [];
-  let cursor: string | undefined;
-  do {
-    const params = new URLSearchParams({ type, limit: "100" });
-    if (cursor) params.set("cursor", cursor);
-    const res = await api.get<PaginatedResponse<Task>>(
-      `/projects/${projectKey}/tasks?${params.toString()}`
-    );
-    all.push(...res.data);
-    cursor = res.next_cursor ?? undefined;
-  } while (cursor);
-  return all;
-}
 
 function DroppableColumn({ id, children, count }: { id: string; children: React.ReactNode; count: number }) {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -246,7 +232,7 @@ export function KanbanBoard({ projectKey, orgSlug }: KanbanBoardProps) {
                     key={task.key}
                     task={task}
                     epicBreadcrumb={buildEpicBreadcrumb(task.epic_key, epicMap)}
-                    onClick={() => router.push(`/${orgSlug}/tasks/${task.key}`)}
+                    onClick={() => router.push(`/${orgSlug}/projects/${projectKey}/tasks/${task.key}`)}
                   />
                 ))}
               </SortableContext>
