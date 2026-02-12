@@ -90,99 +90,112 @@ test.describe("Task markdown rendering", () => {
     account,
     baseURL,
   }) => {
-    const { displayId } = await seedTask(
+    const { projectKey, displayId } = await seedTask(
       baseURL ?? "http://localhost:3000",
       account.accessToken,
       account.orgSlug
     );
 
-    await page.goto(`/${account.orgSlug}/tasks/${displayId}`);
+    await page.goto(`/${account.orgSlug}/projects/${projectKey}/tasks/${displayId}`);
 
     // Wait for the task title to confirm data loaded
     await expect(page.getByText("Migrate to OAuth 2.0 + PKCE")).toBeVisible({
       timeout: 15_000,
     });
 
-    // The prose container wrapping the markdown
-    const prose = page.locator(".prose");
-    await expect(prose).toBeVisible();
+    // The container wrapping the markdown
+    const container = page.locator(".vscode-markdown");
+    await expect(container).toBeVisible();
 
     // --- Verify key markdown elements render as proper HTML ---
 
     // H2 heading
-    await expect(prose.locator("h2", { hasText: "Overview" })).toBeVisible();
+    await expect(container.locator("h2", { hasText: "Overview" })).toBeVisible();
 
     // H3 headings
     await expect(
-      prose.locator("h3", { hasText: "Requirements" })
+      container.locator("h3", { hasText: "Requirements" })
     ).toBeVisible();
     await expect(
-      prose.locator("h3", { hasText: "Technical Notes" })
+      container.locator("h3", { hasText: "Technical Notes" })
     ).toBeVisible();
 
     // Ordered list items
     await expect(
-      prose.locator("ol > li", { hasText: "authorization_code" })
+      container.locator("ol > li", { hasText: "authorization_code" })
     ).toBeVisible();
 
     // Bold text
-    await expect(prose.locator("strong", { hasText: "migration" })).toBeVisible();
+    await expect(container.locator("strong", { hasText: "migration" })).toBeVisible();
 
     // Inline code
     await expect(
-      prose.locator("code", { hasText: "authorization_code" })
+      container.locator("code", { hasText: "authorization_code" })
     ).toBeVisible();
 
     // Code block (fenced)
-    await expect(prose.locator("pre code")).toBeVisible();
+    await expect(container.locator("pre code")).toBeVisible();
     await expect(
-      prose.locator("pre code", { hasText: "token_endpoint" })
+      container.locator("pre code", { hasText: "token_endpoint" })
     ).toBeVisible();
 
     // Table (GFM)
-    await expect(prose.locator("table")).toBeVisible();
+    await expect(container.locator("table")).toBeVisible();
     await expect(
-      prose.locator("th", { hasText: "Complexity" })
+      container.locator("th", { hasText: "Complexity" })
     ).toBeVisible();
     await expect(
-      prose.locator("td", { hasText: "Very High" })
+      container.locator("td", { hasText: "Very High" })
     ).toBeVisible();
 
     // Blockquote
-    await expect(prose.locator("blockquote")).toBeVisible();
+    await expect(container.locator("blockquote")).toBeVisible();
 
     // Horizontal rule
-    await expect(prose.locator("hr")).toBeVisible();
+    await expect(container.locator("hr")).toBeVisible();
 
     // Strikethrough (GFM)
-    await expect(prose.locator("del", { hasText: "old auth docs" })).toBeVisible();
+    await expect(container.locator("s", { hasText: "old auth docs" })).toBeVisible();
 
     // Emphasis / italic
-    await expect(prose.locator("em", { hasText: "required" })).toBeVisible();
+    await expect(container.locator("em", { hasText: "required" })).toBeVisible();
 
-    // --- Visual regression: check that prose styles are applied ---
-    // If @tailwindcss/typography is not loaded, headings will have no
-    // margin/size differentiation from body text.
+    // --- Visual regression: VS Code styling applied ---
 
-    const h2 = prose.locator("h2", { hasText: "Overview" });
+    const h2 = container.locator("h2", { hasText: "Overview" });
     const h2FontSize = await h2.evaluate(
       (el) => parseFloat(getComputedStyle(el).fontSize)
     );
-    // prose-sm h2 should be notably larger than base (14px). If typography
-    // plugin is missing, it'll inherit the body size (~14px).
+    // VS Code CSS sets h2 to 1.5em of 14px = 21px
     expect(h2FontSize).toBeGreaterThanOrEqual(18);
 
+    // H2 should have a bottom border (signature VS Code look)
+    const h2BorderWidth = await h2.evaluate(
+      (el) => parseFloat(getComputedStyle(el).borderBottomWidth)
+    );
+    expect(h2BorderWidth).toBeGreaterThanOrEqual(1);
+
     // Code block should have a background color (not transparent)
-    const pre = prose.locator("pre").first();
+    const pre = container.locator("pre").first();
     const preBg = await pre.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(preBg).not.toBe("rgba(0, 0, 0, 0)");
 
-    // Table should have visible padding (typography uses paddingBottom on th)
-    const th = prose.locator("th").first();
+    // Table should have visible padding
+    const th = container.locator("th").first();
     const thPadding = await th.evaluate(
       (el) => parseFloat(getComputedStyle(el).paddingBottom)
     );
     expect(thPadding).toBeGreaterThan(0);
+
+    // Blockquote should have a left border
+    const bq = container.locator("blockquote").first();
+    const bqBorderLeft = await bq.evaluate(
+      (el) => parseFloat(getComputedStyle(el).borderLeftWidth)
+    );
+    expect(bqBorderLeft).toBeGreaterThanOrEqual(4);
+
+    // Syntax highlighting classes present on code blocks
+    await expect(container.locator("pre code .hljs-string").first()).toBeVisible();
 
     // --- Screenshot the full task detail page ---
     await page.screenshot({
@@ -190,9 +203,30 @@ test.describe("Task markdown rendering", () => {
       fullPage: true,
     });
 
-    // --- Screenshot just the markdown prose area ---
-    await prose.screenshot({
+    // --- Screenshot just the markdown area (light mode) ---
+    await container.screenshot({
       path: "screenshots/task-markdown-prose.png",
+    });
+
+    // --- Dark mode variant ---
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    await page.waitForTimeout(200);
+
+    // Dark mode should change code block background
+    const preBgDark = await pre.evaluate(
+      (el) => getComputedStyle(el).backgroundColor
+    );
+    expect(preBgDark).not.toBe("rgba(0, 0, 0, 0)");
+    expect(preBgDark).not.toBe(preBg);
+
+    // Dark mode h2 border should use light color
+    const h2BorderDark = await h2.evaluate(
+      (el) => getComputedStyle(el).borderBottomColor
+    );
+    expect(h2BorderDark).toContain("rgba(255, 255, 255");
+
+    await container.screenshot({
+      path: "screenshots/task-markdown-prose-dark.png",
     });
   });
 });
