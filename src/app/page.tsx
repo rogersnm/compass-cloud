@@ -1,4 +1,5 @@
 import { LandingNavButtons } from "./landing-nav-buttons";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardDescription,
@@ -45,7 +46,8 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between border-b border-border/60 px-6 py-4 shadow-[0_1px_3px_0_rgba(37,99,235,0.04)]">
         <span className="text-lg font-bold tracking-tight">Compass</span>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LandingNavButtons />
         </div>
       </nav>

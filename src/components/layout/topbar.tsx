@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTheme } from "next-themes";
-import { Menu, Moon, Sun, LogOut, Search } from "lucide-react";
+import { Menu, LogOut, Search } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,23 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { OrgSwitcher } from "./org-switcher";
 import { MobileSidebar } from "./sidebar";
 import { SearchCommand } from "@/components/search/search-command";
-
-function ThemeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-    >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
-    </Button>
-  );
-}
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Topbar({ orgSlug }: { orgSlug: string }) {
   const { user, logout } = useAuth();
@@ -49,7 +32,7 @@ export function Topbar({ orgSlug }: { orgSlug: string }) {
     : "?";
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
+    <header className="relative z-10 flex h-14 items-center justify-between border-b bg-background shadow-[0_2px_6px_-2px_rgba(0,0,0,0.05)] px-4">
       <div className="flex items-center gap-2">
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
